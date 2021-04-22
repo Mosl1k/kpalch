@@ -1,0 +1,1 @@
+web: gunicorn kpalch.wsgi --log-file -
