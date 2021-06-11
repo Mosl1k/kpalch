@@ -1,10 +1,13 @@
 {% extends 'main/base.html' %}
+{% block start %} active {% endblock %}
 
 {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
+
+
     <h1>Главная страница</h1>
     {% if tasks %}
         {% for el in tasks %}
@@ -14,6 +17,7 @@
         </div>
     {% endfor %}
     {% else %}
-        <p>У нас нет записей!</p>
+        <p>Записи отсутствуют!</p>
     {% endif %}
 {% endblock %}
+

@@ -1,11 +1,11 @@
 {% extends 'main/base.html' %}
+{% block comment %} active {% endblock %}
 
 {% block title %}
-Создать таск
+Добавить коммент
 {% endblock %}
-
 {% block content %}
-    <h1>Создать таск</h1>
+    <h1>Добавить коммент</h1>
     <form method="post">
          {% csrf_token %}
         {{ form.title }}<br>
