@@ -5,8 +5,9 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Связь со мной</h1>{% if bt %}{{ bt }}{% endif %}
+    <h1>Связь со мной</h1>
     <p><a href="https://vk.com/moslik" target="_blank" class="btn btn-info btn-lg" role="button">Вконтакте</a></p>
+    <h3>Курс битка: {% if bt %}{{ bt }}{% endif %}</h3>
     <h3><font color="#663399">если вдруг,кому-то не жалко:</font></h3>
     <p><a href="https://vk.com/vkpay#action=transfer-to-user&user_id=12283715" target="_blank" class="btn btn-danger btn-lg" role="button">VK_Pay</a></p>
     <h3><font color="#663399">или Яндекс:</font></h3>
