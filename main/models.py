@@ -1,6 +1,7 @@
 from django.db import models
-
 # Create your models here.
+
+
 class Task(models.Model):
     title = models.CharField('Назваие', max_length=50)
     task = models.TextField('Описание')
@@ -9,5 +10,5 @@ class Task(models.Model):
         return self.title
 
     class Meta:
-        verbose_name = 'Задача'
-        verbose_name_plural = 'Задачи'
+        verbose_name = 'Коммент'
+        verbose_name_plural = 'Комментарии'

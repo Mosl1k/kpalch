@@ -9,7 +9,6 @@ cursor.execute("""select * from sqlite_master
 tables = cursor.fetchall()
 
 for table in tables:
-  print(table) # информация о таблицах
-  print("-----------------")
+    print(table)  # информация о таблицах
 #  print(table[1]) #названия таблиц
 

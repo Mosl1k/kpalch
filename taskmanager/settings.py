@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_file = os.path.join(BASE_DIR, ".env")
 if os.path.isfile(dotenv_file):
     dotenv.load_dotenv(dotenv_file)
-#-------------------
+# -------------------
 
 
 # Quick-start development settings - unsuitable for production
@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'gunicorn',
-    'main'
+    'main',
 ]
 
 MIDDLEWARE = [
@@ -84,13 +84,13 @@ WSGI_APPLICATION = 'taskmanager.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-#-----------------------
-#DATABASES = {
+# -----------------------
+# DATABASES = {
 #    'default': {
 #        'ENGINE': 'django.db.backends.sqlite3',
 #        'NAME': BASE_DIR / 'db.sqlite3',
 #    }
-#}
+# }
 DATABASES = {}
 DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 
@@ -139,8 +139,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-#db_from_env = dj_database_url.config()
-#DATABASE['default'].update(db_from_env)
+# db_from_env = dj_database_url.config()
+# DATABASE['default'].update(db_from_env)
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

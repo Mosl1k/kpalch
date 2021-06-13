@@ -1,5 +1,5 @@
-#command = 'gunicorn'
-#pythonpath = '/home/hostgeek/myapps/parser/siteparser'
+# command = 'gunicorn'
+# pythonpath = '/home/hostgeek/myapps/parser/siteparser'
 bind = '0.0.0.0:8000'
 workers = 3
 user = 'moslik'

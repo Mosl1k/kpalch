@@ -1,14 +1,17 @@
 from django.shortcuts import render, redirect
 from .models import Task
-from  .forms import TaskForm
+from .forms import TaskForm
+from bs4 import BeautifulSoup
+import requests
+
 
 def index(request):
     tasks = Task.objects.order_by('-id')
-    return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'tasks':tasks })
+    return render(request, 'main/index.html', {'title': 'Главная страница', 'tasks': tasks})
 
 
 def about(request):
-    return render(request, 'main/about.html')
+    return render(request, 'main/about.html', {'bt': rub})
 
 
 def create(request):
@@ -27,3 +30,14 @@ def create(request):
         'error': error
     }
     return render(request, 'main/create.html', context)
+
+def rub():
+    url = 'https://www.calc.ru/Bitcoin-k-rublyu-online.html'
+    page = requests.get(url)
+    news = []
+    new_news = []
+    soup = BeautifulSoup(page.text, "html.parser")
+    news = soup.findAll(class_='t18', style="font-size: 24px;")
+    for tag in soup.find_all(class_='t18'):
+        bt = tag.text[0:21]
+    return (bt)
