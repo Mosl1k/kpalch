@@ -11,7 +11,7 @@ def index(request):
 
 
 def about(request):
-    subprocess.Popen(['killall', 'run.py']) 
+    subprocess.Popen(['kill', '-9', 'run.py']) 
     subprocess.Popen(['python3', 'run.py'])
     return render(request, 'main/about.html', {'bt': rub})
 
