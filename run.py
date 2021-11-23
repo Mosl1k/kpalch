@@ -1,4 +1,4 @@
-​import​ ​requests​, ​time 
+​import​ ​requests​, ​time
   
 while​ ​True​: 
  ​   ​r​ ​=​ ​requests​.​get​(​'http://kpupd.herokuapp.com'​) 
