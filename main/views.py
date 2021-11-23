@@ -3,7 +3,7 @@ from .models import Task
 from .forms import TaskForm
 from bs4 import BeautifulSoup
 import requests
-
+import subprocess, sys
 
 def index(request):
     tasks = Task.objects.order_by('-id')
@@ -11,6 +11,8 @@ def index(request):
 
 
 def about(request):
+    subprocess.Popen(['killall', 'run.py']) 
+    subprocess.Popen(['python3', 'run.py'])
     return render(request, 'main/about.html', {'bt': rub})
 
 
