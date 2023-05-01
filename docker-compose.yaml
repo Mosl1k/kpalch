@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+  web:
+    build: ./app
+    env_file:
+          - .env
+#    command: python ./kpalch/manage.py makemigrations
+#    command: python ./kpalch/manage.py migrate
+    command: python ./kpalch/manage.py runserver 0.0.0.0:8080
+#    command: gunicorn ./kpalch/taskmanager.wsgi:application --bind 0.0.0.0:8080
+    volumes:
+      - ./app/:/usr/src/app/
+    ports:
+      - 8080:8080
+#      - 5432:5432
+#    env_file:
+#      - ./.env.dev
