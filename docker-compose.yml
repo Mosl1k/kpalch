@@ -12,9 +12,9 @@ services:
       - POSTGRES_PASSWORD=postgres
   web:
     build: .
-#    command: python ./kpalch/manage.py makemigrations
-   # command: python manage.py migrate --run-syncdb
     command: python manage.py runserver 0.0.0.0:80
+    command: python ./kpalch/manage.py makemigrations
+    command: python manage.py migrate --run-syncdb
 #    command: gunicorn taskmanager.wsgi:application -b 0.0.0.0:\$PORT
     volumes:
       - .:/code
