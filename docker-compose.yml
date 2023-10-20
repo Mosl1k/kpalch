@@ -12,6 +12,7 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+
   web:
     build: ./app
     command: python manage.py runserver 0.0.0.0:80
@@ -29,4 +30,5 @@ services:
       - POSTGRES_PASSWORD=postgres
     depends_on:
       - db
+
 
