@@ -1,0 +1,6 @@
+<<<<<<< HEAD
+__pycache__
+*.pyc
+db.sqlite3.env
+db.sqlite3
+sqlite3
