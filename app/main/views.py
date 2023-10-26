@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Task
 from .forms import TaskForm
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 import requests
 import subprocess, sys
 
@@ -33,13 +33,13 @@ def create(request):
     }
     return render(request, 'main/create.html', context)
 
-def rub():
-    url = 'https://www.calc.ru/Bitcoin-k-rublyu-online.html'
-    page = requests.get(url)
-    news = []
-    new_news = []
-    soup = BeautifulSoup(page.text, "html.parser")
-    news = soup.findAll(class_='t18', style="font-size: 24px;")
-    for tag in soup.find_all(class_='t18'):
-        bt = tag.text[0:21]
-    return (bt)
+# def rub():
+#     url = 'https://www.calc.ru/Bitcoin-k-rublyu-online.html'
+#     page = requests.get(url)
+#     news = []
+#     new_news = []
+#     soup = BeautifulSoup(page.text, "html.parser")
+#     news = soup.findAll(class_='t18', style="font-size: 24px;")
+#     for tag in soup.find_all(class_='t18'):
+#         bt = tag.text[0:21]
+#     return (bt)
