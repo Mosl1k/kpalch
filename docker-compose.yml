@@ -14,13 +14,13 @@ services:
 
   web:
     build: ./app
-    command: python manage.py runserver 0.0.0.0:80
+    command: python manage.py runserver 0.0.0.0:8090
     volumes:
       - ./app:/code
 #    expose:
 #      - "80"
     ports:
-      - "80:80"
+      - "8090:8090"
     environment:
       - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres

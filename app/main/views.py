@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from .models import Task
 from .forms import TaskForm
 #from bs4 import BeautifulSoup
-import requests
+#import requests
 import subprocess, sys
 
 def index(request):
