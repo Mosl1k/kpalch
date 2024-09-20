@@ -16,7 +16,7 @@ services:
   django:
     build: ./app
     container_name: django
-    command: python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0:8090
+    command: python manage.py runserver 0:8090
     volumes:
       - ./app:/code
 #    expose:
