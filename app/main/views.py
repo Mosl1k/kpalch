@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect
 from .models import Task
 from .forms import TaskForm
-#from bs4 import BeautifulSoup
-#import requests
-import subprocess, sys
+# from bs4 import BeautifulSoup
+# import requests
+# import subprocess, sys
 
 def index(request):
     tasks = Task.objects.order_by('-id')
@@ -32,6 +32,10 @@ def create(request):
         'error': error
     }
     return render(request, 'main/create.html', context)
+
+def geshtalt(request):
+    return render(request, 'main/geshtalt.html')
+
 
 # def rub():
 #     url = 'https://www.calc.ru/Bitcoin-k-rublyu-online.html'

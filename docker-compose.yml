@@ -3,6 +3,7 @@ version: "3.2"
 services:
   db:
     image: postgres
+    container_name: db
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
@@ -12,8 +13,9 @@ services:
     ports:
       - "5432:5432"
 
-  web:
+  django:
     build: ./app
+    container_name: django
     command: python manage.py runserver 0.0.0.0:8090
     volumes:
       - ./app:/code
