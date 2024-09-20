@@ -108,7 +108,7 @@ DATABASES = {
         'NAME': os.getenv('POSTGRES_NAME', 'postgres'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),  # Используйте переменную окружения
+        'HOST': os.getenv('POSTGRES_HOST', '192.168.1.114'),  # Используйте переменную окружения
         'PORT': '5432',
     }
 }
