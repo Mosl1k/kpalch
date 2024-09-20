@@ -92,23 +92,29 @@ WSGI_APPLICATION = 'taskmanager.wsgi.application'
 #    }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': 'postgres',
+#         'PASSWORD': 'postgres',
+#         'HOST': '192.168.1.114',
+#         'PORT': '',
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': '192.168.1.114',
-        'PORT': '',
+        'NAME': os.getenv('POSTGRES_NAME', 'postgres'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),  # Используйте переменную окружения
+        'PORT': '5432',
     }
 }
 
-
 #DATABASES = {}
 #DATABASES['default'] = dj_database_url.config(conn_max_age=600)
-
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
