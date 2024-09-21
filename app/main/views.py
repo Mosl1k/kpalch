@@ -38,7 +38,7 @@ def geshtalt(request):
     return render(request, 'main/geshtalt.html')
 
 
-def get_nodes_status():
+def get_nodes_status(request):
     # Подключение через config, который находится внутри контейнера
     config.load_incluster_config()
 
@@ -56,7 +56,8 @@ def get_nodes_status():
         }
         node_status.append(status)
 
-    return node_status
+    # Передаем данные о нодах в шаблон
+    return render(request, 'node_status.html', {'node_status': node_status})
 
 
 # def rub():
