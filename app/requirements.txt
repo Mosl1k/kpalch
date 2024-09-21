@@ -11,4 +11,4 @@ Jinja2==2.10.1
 virtualenv==20.4.2
 bs4==0.0.1
 requests
-
+kubernetes==31.0.0
