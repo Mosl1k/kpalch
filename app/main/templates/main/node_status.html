@@ -1,0 +1,21 @@
+<h2>Node Status</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Node Name</th>
+            <th>IP Address</th>
+            <th>Status</th>
+            <th>Ready</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for node in node_status %}
+        <tr>
+            <td>{{ node.name }}</td>
+            <td>{{ node.addresses.0 }}</td>
+            <td>{{ node.status }}</td>
+            <td>{{ node.ready }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
