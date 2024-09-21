@@ -12,9 +12,25 @@ def index(request):
 
 
 def about(request):
-#    subprocess.Popen(['kill', '-9', 'run.py']) 
-#    subprocess.Popen(['python3', 'run.py'])
-    return render(request, 'main/about.html')#, {'bt': rub})
+    # Подключение через config, который находится внутри контейнера
+    config.load_incluster_config()
+
+    v1 = client.CoreV1Api()
+    nodes = v1.list_node()
+
+    node_status = []
+    for node in nodes.items:
+        status = {
+            "name": node.metadata.name,
+            "status": node.status.conditions[-1].type,
+            "addresses": [addr.address for addr in node.status.addresses if addr.type == "InternalIP"],
+            "ready": any(
+                condition.type == "Ready" and condition.status == "True" for condition in node.status.conditions),
+        }
+        node_status.append(status)
+
+    # Передаем данные о нодах в шаблон
+    return render(request, 'main/about.html', {'node_status': node_status})
 
 
 def create(request):
@@ -36,29 +52,6 @@ def create(request):
 
 def geshtalt(request):
     return render(request, 'main/geshtalt.html')
-
-
-def get_nodes_status(request):
-    # Подключение через config, который находится внутри контейнера
-    config.load_incluster_config()
-
-    v1 = client.CoreV1Api()
-    nodes = v1.list_node()
-
-    node_status = []
-    for node in nodes.items:
-        status = {
-            "name": node.metadata.name,
-            "status": node.status.conditions[-1].type,
-            "addresses": [addr.address for addr in node.status.addresses if addr.type == "InternalIP"],
-            "ready": any(
-                condition.type == "Ready" and condition.status == "True" for condition in node.status.conditions),
-        }
-        node_status.append(status)
-
-    # Передаем данные о нодах в шаблон
-    return render(request, 'node_status.html', {'node_status': node_status})
-
 
 # def rub():
 #     url = 'https://www.calc.ru/Bitcoin-k-rublyu-online.html'

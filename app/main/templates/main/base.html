@@ -14,7 +14,6 @@
       <li class="nav-item"><a href="{% url 'about' %}" class="nav-link {% block about %}{% endblock %} ">Контакты</a></li>
       <li class="nav-item"><a href="{% url 'create' %}" class="nav-link {% block comment %}{% endblock %}">Добавить коммент</a></li>
      <li class="nav-item"><a href="{% url 'geshtalt' %}" class="nav-link {% block geshtalt %}{% endblock %}">Незабудки</a></li>
-    <li class="nav-item"><a href="{% url 'node_status' %}" class="nav-link {% block node_status %}{% endblock %}">Статус нод</a></li>
 </ul>
     <div class="container">
   {% block content %}{% endblock %}
