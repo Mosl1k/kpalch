@@ -1,10 +1,13 @@
 name: Django CI
 
+# Отключено: требует настройки путей к requirements.txt
+# TODO: Исправить пути или удалить этот workflow, если tests.yml достаточно
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:  # Только ручной запуск, не на каждый коммит
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   build:
