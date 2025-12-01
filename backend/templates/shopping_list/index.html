@@ -120,26 +120,26 @@
         <!-- Модальное окно добавления (скрыто по умолчанию) -->
         <div id="addModal" style="display: none;">
             <div>
-                <h3>Добавить элемент</h3>
-                <input type="text" 
-                       id="itemName" 
-                       placeholder="Название элемента"
+            <h3>Добавить элемент</h3>
+            <input type="text" 
+                   id="itemName" 
+                   placeholder="Название элемента"
                        onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') closeAddModal();">
-                <select id="itemCategory">
-                    {% for category in categories %}
-                    <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
-                        {{ category.display_name }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <select id="itemPriority">
-                    <option value="1">Низкий приоритет</option>
-                    <option value="2" selected>Средний приоритет</option>
-                    <option value="3">Высокий приоритет</option>
-                </select>
-                <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+            <select id="itemCategory">
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
+                    {{ category.display_name }}
+                </option>
+                {% endfor %}
+            </select>
+            <select id="itemPriority">
+                <option value="1">Низкий приоритет</option>
+                <option value="2" selected>Средний приоритет</option>
+                <option value="3">Высокий приоритет</option>
+            </select>
+            <button class="btn btn-primary" onclick="addItem()">Добавить</button>
                 <button class="btn btn-secondary" onclick="closeAddModal()">Отмена</button>
-            </div>
+        </div>
         </div>
     
     <!-- Фиксированная панель навигации внизу -->
@@ -261,7 +261,7 @@
     /* Кнопка "Удалить все" */
     .bulk-delete-container {
         position: fixed;
-        bottom: 2rem;
+        bottom: 100px; /* Выше кнопок навигации (которые на bottom: 0) */
         left: 50%;
         transform: translateX(-50%);
         background: white;
@@ -271,7 +271,7 @@
         display: flex;
         align-items: center;
         gap: 1.5rem;
-        z-index: 1000;
+        z-index: 1002; /* Выше кнопок навигации (z-index: 1000) */
         animation: slideUp 0.3s ease-out;
     }
     @keyframes slideUp {
@@ -477,6 +477,12 @@
             width: 55px;
             height: 55px;
             font-size: 1.8rem;
+        }
+        
+        .bulk-delete-container {
+            bottom: 90px; /* Выше кнопок навигации на мобильных */
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
         }
         
         .container {
