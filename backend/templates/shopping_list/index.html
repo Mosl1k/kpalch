@@ -452,6 +452,10 @@
     let currentCategoryIndex = allCategories.indexOf(currentCategory);
     if (currentCategoryIndex === -1) currentCategoryIndex = 0;
     
+    console.log('[Init] allCategories:', allCategories);
+    console.log('[Init] currentCategory:', currentCategory);
+    console.log('[Init] currentCategoryIndex:', currentCategoryIndex);
+    
     // Функция для добавления кнопок перемещения
     function addMoveButtons(itemElement) {
         const itemName = itemElement.getAttribute('data-name');
@@ -1144,41 +1148,28 @@
     
     // Функция для показа/скрытия формы добавления элемента
     function toggleAddForm() {
+        console.log('[toggleAddForm] Called');
         const addForm = document.getElementById('addForm');
-        if (addForm) {
-            if (addForm.style.display === 'none' || addForm.style.display === '') {
-                addForm.style.display = 'block';
-                // Фокусируемся на поле ввода
-                const nameInput = document.getElementById('itemName');
-                if (nameInput) {
-                    setTimeout(() => nameInput.focus(), 100);
-                }
-            } else {
-                addForm.style.display = 'none';
-                // Очищаем форму
-                const nameInput = document.getElementById('itemName');
-                if (nameInput) nameInput.value = '';
-            }
+        if (!addForm) {
+            console.error('[toggleAddForm] addForm element not found');
+            return;
         }
-    }
-    
-    // Функция для показа/скрытия формы добавления элемента
-    function toggleAddForm() {
-        const addForm = document.getElementById('addForm');
-        if (addForm) {
-            if (addForm.style.display === 'none' || addForm.style.display === '') {
-                addForm.style.display = 'block';
-                // Фокусируемся на поле ввода
-                const nameInput = document.getElementById('itemName');
-                if (nameInput) {
-                    setTimeout(() => nameInput.focus(), 100);
-                }
-            } else {
-                addForm.style.display = 'none';
-                // Очищаем форму
-                const nameInput = document.getElementById('itemName');
-                if (nameInput) nameInput.value = '';
+        
+        const isHidden = addForm.style.display === 'none' || addForm.style.display === '';
+        console.log('[toggleAddForm] Current display:', addForm.style.display, 'isHidden:', isHidden);
+        
+        if (isHidden) {
+            addForm.style.display = 'block';
+            // Фокусируемся на поле ввода
+            const nameInput = document.getElementById('itemName');
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 100);
             }
+        } else {
+            addForm.style.display = 'none';
+            // Очищаем форму
+            const nameInput = document.getElementById('itemName');
+            if (nameInput) nameInput.value = '';
         }
     }
     
@@ -1188,13 +1179,6 @@
         const addCategoryForm = document.getElementById('addCategoryForm');
         if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
             addCategoryForm.style.display = 'none';
-        }
-        
-        // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
-        const addForm = document.getElementById('addForm');
-        const navButtons = document.querySelector('.nav-buttons');
-        if (addForm && navButtons && !navButtons.contains(event.target) && !addForm.contains(event.target)) {
-            addForm.style.display = 'none';
         }
         
         // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
