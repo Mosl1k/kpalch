@@ -7,6 +7,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from .models import Category, ShoppingItem, Friendship, SharedList, UserProfile
+import urllib.parse
 
 
 class ShoppingListAPITestCase(TestCase):
@@ -32,13 +33,15 @@ class ShoppingListAPITestCase(TestCase):
     
     def test_list_items_empty(self):
         """Тест получения пустого списка"""
-        response = self.client.get('/api/list', {'category': 'купить'})
+        url = reverse('list') + '?category=купить'
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
     
     def test_add_item(self):
         """Тест добавления элемента"""
-        response = self.client.post('/api/add', {
+        url = reverse('add')
+        response = self.client.post(url, {
             'name': 'Молоко',
             'category': 'купить',
             'priority': 2
@@ -55,7 +58,8 @@ class ShoppingListAPITestCase(TestCase):
             category=self.category,
             priority=2
         )
-        response = self.client.put(f'/api/buy/{item.name}', {
+        url = reverse('buy', kwargs={'name': item.name}) + '?category=купить'
+        response = self.client.put(url, {
             'bought': True,
             'category': 'купить'
         }, format='json')
@@ -71,13 +75,15 @@ class ShoppingListAPITestCase(TestCase):
             category=self.category,
             priority=2
         )
-        response = self.client.delete(f'/api/delete/{item.name}', {'category': 'купить'})
+        url = reverse('delete', kwargs={'name': item.name}) + '?category=купить'
+        response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ShoppingItem.objects.count(), 0)
     
     def test_add_category(self):
         """Тест добавления категории"""
-        response = self.client.post('/api/category/add', {
+        url = reverse('add_category')
+        response = self.client.post(url, {
             'name': 'работа',
             'display_name': 'Работа'
         }, format='json')
@@ -108,7 +114,8 @@ class FriendsAPITestCase(TestCase):
     
     def test_send_friend_request(self):
         """Тест отправки запроса на дружбу"""
-        response = self.client.post('/api/friend-request', {
+        url = reverse('send_friend_request')
+        response = self.client.post(url, {
             'user_id': self.user2.id
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -125,7 +132,8 @@ class FriendsAPITestCase(TestCase):
             to_user=self.user1,
             status='pending'
         )
-        response = self.client.post(f'/api/friend-request/{friendship.id}/accept', format='json')
+        url = reverse('accept_friend_request', kwargs={'friendship_id': friendship.id})
+        response = self.client.post(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         friendship.refresh_from_db()
         self.assertEqual(friendship.status, 'accepted')
@@ -137,7 +145,8 @@ class FriendsAPITestCase(TestCase):
             to_user=self.user2,
             status='accepted'
         )
-        response = self.client.get('/api/friends')
+        url = reverse('list_friends')
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
@@ -185,7 +194,8 @@ class SharedListAPITestCase(TestCase):
     
     def test_share_list(self):
         """Тест отправки списка другу"""
-        response = self.client.post('/api/share-list', {
+        url = reverse('share_list')
+        response = self.client.post(url, {
             'user_id': self.user2.id,
             'category': 'купить',
             'message': 'Вот мой список'
@@ -208,7 +218,8 @@ class SharedListAPITestCase(TestCase):
         
         client2 = APIClient()
         client2.force_authenticate(user=self.user2)
-        response = client2.post(f'/api/shared-list/{shared_list.id}/accept', format='json')
+        url = reverse('accept_shared_list', kwargs={'shared_list_id': shared_list.id})
+        response = client2.post(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         shared_list.refresh_from_db()
         self.assertEqual(shared_list.status, 'accepted')
@@ -257,7 +268,8 @@ class BulkDeleteTestCase(TestCase):
         
         # Удаляем все элементы по одному (как в фронтенде)
         for item in items:
-            response = self.client.delete(f'/api/delete/{item.name}', {'category': 'купить'})
+            url = reverse('delete', kwargs={'name': item.name}) + '?category=купить'
+            response = self.client.delete(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         self.assertEqual(ShoppingItem.objects.filter(user=self.user, category=self.category).count(), 0)

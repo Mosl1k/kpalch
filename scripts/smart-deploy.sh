@@ -247,6 +247,31 @@ for service in "${UNIQUE_SERVICES[@]}"; do
     docker-compose up -d "$service"
 done
 
+# Ждем запуска сервисов
+info "Ожидание запуска сервисов..."
+sleep 5
+
+# Проверка доступности сайта после деплоя
+info "Проверка доступности сайта..."
+if docker-compose ps geshtalt | grep -q "Up"; then
+    # Проверяем доступность через nginx или напрямую
+    if docker-compose ps nginx | grep -q "Up"; then
+        # Проверяем через nginx
+        HTTP_CODE=$(docker-compose exec -T nginx curl -s -o /dev/null -w '%{http_code}' http://geshtalt:8080/ 2>/dev/null || echo "000")
+    else
+        # Проверяем напрямую
+        HTTP_CODE=$(docker-compose exec -T geshtalt curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/ 2>/dev/null || echo "000")
+    fi
+    
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
+        info "✓ Сайт доступен (HTTP $HTTP_CODE)"
+    else
+        warn "⚠ Сайт вернул код $HTTP_CODE, возможно требуется дополнительная проверка"
+    fi
+else
+    warn "⚠ Сервис geshtalt не запущен, проверка доступности пропущена"
+fi
+
 # Применяем миграции если изменился Django код
 if [[ " ${UNIQUE_SERVICES[@]} " =~ " geshtalt " ]]; then
     info "Применение миграций Django..."
