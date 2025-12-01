@@ -56,12 +56,19 @@ def register(request):
             try:
                 user = form.save()
                 # Создаем профиль пользователя, если его нет
-                # yandex_id может быть None для обычной регистрации
+                # Используем уникальный yandex_id для обычной регистрации
                 from .models import UserProfile
-                profile, created = UserProfile.objects.get_or_create(
-                    user=user,
-                    defaults={'yandex_id': None}
-                )
+                try:
+                    profile = UserProfile.objects.get(user=user)
+                except UserProfile.DoesNotExist:
+                    # Генерируем уникальный yandex_id для обычной регистрации
+                    # Используем формат "local-{user_id}-{timestamp}" чтобы избежать конфликтов
+                    import time
+                    unique_id = f"local-{user.id}-{int(time.time() * 1000)}"
+                    profile = UserProfile.objects.create(
+                        user=user,
+                        yandex_id=unique_id
+                    )
                 # Автоматически логиним пользователя после регистрации
                 login(request, user)
                 return redirect('index')
