@@ -56,17 +56,17 @@
                            {% if item.bought %}checked{% endif %}
                            onchange="handleCheckboxChange('{{ item.name|escapejs }}', this);"
                            data-item-name="{{ item.name }}">
-                    {% if item.bought %}
                     <button class="btn btn-small btn-primary edit-btn" 
                             onclick="openEditModal('{{ item.name|escapejs }}', '{{ item.category.name|escapejs }}', {{ item.priority }})"
-                            title="Редактировать">
+                            title="Редактировать"
+                            style="display: {% if item.bought %}inline-block{% else %}none{% endif %};">
                         Редактировать
                     </button>
                     <button class="btn btn-small btn-danger delete-btn" 
-                            onclick="deleteItem('{{ item.name|escapejs }}')">
+                            onclick="deleteItem('{{ item.name|escapejs }}')"
+                            style="display: {% if item.bought %}inline-block{% else %}none{% endif %};">
                         Удалить
                     </button>
-                    {% endif %}
                 </div>
             </li>
             {% endfor %}
@@ -279,12 +279,7 @@
     }
     
     .item-name {
-        cursor: pointer;
         flex: 1;
-    }
-    
-    .item-name:hover {
-        text-decoration: underline;
     }
 </style>
 {% endblock extra_css %}
@@ -415,27 +410,19 @@
             return;
         }
         
-        // Показываем/скрываем кнопки удалить и перемещения сразу для лучшего UX
+        // Показываем/скрываем кнопки удалить и редактировать сразу для лучшего UX
         const itemElement = checkbox.closest('.shopping-item');
         const deleteBtn = itemElement.querySelector('.delete-btn');
-        const moveUpBtn = itemElement.querySelector('.move-up-btn');
-        const moveDownBtn = itemElement.querySelector('.move-down-btn');
+        const editBtn = itemElement.querySelector('.edit-btn');
         
         if (bought) {
-            deleteBtn.style.display = 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+            if (editBtn) editBtn.style.display = 'inline-block';
             itemElement.classList.add('bought');
-            // Добавляем кнопки перемещения, если их еще нет
-            if (!moveUpBtn || !moveDownBtn) {
-                addMoveButtons(itemElement);
-            } else {
-                moveUpBtn.style.display = 'inline-block';
-                moveDownBtn.style.display = 'inline-block';
-            }
         } else {
-            deleteBtn.style.display = 'none';
+            if (deleteBtn) deleteBtn.style.display = 'none';
+            if (editBtn) editBtn.style.display = 'none';
             itemElement.classList.remove('bought');
-            if (moveUpBtn) moveUpBtn.style.display = 'none';
-            if (moveDownBtn) moveDownBtn.style.display = 'none';
         }
         
         try {
@@ -459,10 +446,12 @@
                 // Откатываем изменения при ошибке
                 checkbox.checked = !bought;
                 if (bought) {
-                    deleteBtn.style.display = 'none';
+                    if (deleteBtn) deleteBtn.style.display = 'none';
+                    if (editBtn) editBtn.style.display = 'none';
                     itemElement.classList.remove('bought');
                 } else {
-                    deleteBtn.style.display = 'inline-block';
+                    if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                    if (editBtn) editBtn.style.display = 'inline-block';
                     itemElement.classList.add('bought');
                 }
                 const errorText = await response.text();
@@ -473,10 +462,12 @@
             // Откатываем изменения при ошибке
             checkbox.checked = !bought;
             if (bought) {
-                deleteBtn.style.display = 'none';
+                if (deleteBtn) deleteBtn.style.display = 'none';
+                if (editBtn) editBtn.style.display = 'none';
                 itemElement.classList.remove('bought');
             } else {
-                deleteBtn.style.display = 'inline-block';
+                if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                if (editBtn) editBtn.style.display = 'inline-block';
                 itemElement.classList.add('bought');
             }
             console.error('Error:', error);
