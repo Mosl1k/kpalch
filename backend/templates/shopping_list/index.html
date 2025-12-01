@@ -69,26 +69,28 @@
                            onchange="handleCheckboxChange('{{ item.name|escapejs }}', this);"
                            data-item-name="{{ item.name }}">
                 </div>
-                <!-- Inline форма редактирования (скрыта по умолчанию) -->
-                <div class="inline-edit-form" id="inlineEdit_{{ item.name|slugify }}" style="display: none;">
-                    <input type="text" 
-                           class="inline-edit-name" 
-                           placeholder="Название"
-                           value="{{ item.name }}">
-                    <select class="inline-edit-category">
-                        {% for category in categories %}
-                        <option value="{{ category.name }}" {% if item.category.name == category.name %}selected{% endif %}>
-                            {{ category.display_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <select class="inline-edit-priority">
-                        <option value="1" {% if item.priority == 1 %}selected{% endif %}>Низкий</option>
-                        <option value="2" {% if item.priority == 2 %}selected{% endif %}>Средний</option>
-                        <option value="3" {% if item.priority == 3 %}selected{% endif %}>Высокий</option>
-                    </select>
-                    <button class="btn btn-small btn-primary" onclick="saveInlineEdit('{{ item.name|escapejs }}')">✓</button>
-                    <button class="btn btn-small btn-secondary" onclick="cancelInlineEdit('{{ item.name|escapejs }}')">✕</button>
+                <!-- Inline форма редактирования (скрыта по умолчанию, поверх элемента) -->
+                <div class="inline-edit-overlay" id="inlineEdit_{{ item.name|slugify }}" style="display: none;">
+                    <div class="inline-edit-form">
+                        <input type="text" 
+                               class="inline-edit-name" 
+                               placeholder="Название"
+                               value="{{ item.name }}">
+                        <select class="inline-edit-category">
+                            {% for category in categories %}
+                            <option value="{{ category.name }}" {% if item.category.name == category.name %}selected{% endif %}>
+                                {{ category.display_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select class="inline-edit-priority">
+                            <option value="1" {% if item.priority == 1 %}selected{% endif %}>Низкий</option>
+                            <option value="2" {% if item.priority == 2 %}selected{% endif %}>Средний</option>
+                            <option value="3" {% if item.priority == 3 %}selected{% endif %}>Высокий</option>
+                        </select>
+                        <button class="btn btn-small btn-primary" onclick="saveInlineEdit('{{ item.name|escapejs }}')">✓</button>
+                        <button class="btn btn-small btn-secondary" onclick="cancelInlineEdit('{{ item.name|escapejs }}')">✕</button>
+                    </div>
                 </div>
             </li>
             {% endfor %}
@@ -280,15 +282,31 @@
         flex: 1;
     }
     
-    /* Inline форма редактирования */
+    /* Inline форма редактирования поверх элемента */
+    .inline-edit-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.98);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .shopping-item {
+        position: relative;
+    }
+    
     .inline-edit-form {
         display: flex;
         gap: 0.5rem;
         align-items: center;
-        padding: 0.5rem;
-        background: #f5f5f5;
-        border-radius: 5px;
-        margin-top: 0.5rem;
+        width: 100%;
     }
     
     .inline-edit-name {
@@ -296,6 +314,7 @@
         padding: 0.5rem;
         border: 1px solid #ddd;
         border-radius: 3px;
+        font-size: 1rem;
     }
     
     .inline-edit-category,
@@ -303,6 +322,7 @@
         padding: 0.5rem;
         border: 1px solid #ddd;
         border-radius: 3px;
+        font-size: 0.9rem;
     }
     
     .item-actions {
@@ -858,13 +878,8 @@
         
         currentEditItem = name;
         
-        // Скрываем название и действия, показываем форму редактирования
-        const itemNameDiv = itemElement.querySelector('.item-name');
-        const itemActionsDiv = itemElement.querySelector('.item-actions');
+        // Показываем форму редактирования поверх элемента
         const editForm = itemElement.querySelector(`#inlineEdit_${name.replace(/[^a-zA-Z0-9]/g, '_')}`);
-        
-        if (itemNameDiv) itemNameDiv.style.display = 'none';
-        if (itemActionsDiv) itemActionsDiv.style.display = 'none';
         if (editForm) {
             editForm.style.display = 'flex';
             const nameInput = editForm.querySelector('.inline-edit-name');
@@ -879,17 +894,12 @@
         const itemElement = document.querySelector(`[data-name="${name}"]`);
         if (!itemElement) return;
         
-        // Восстанавливаем отображение
-        const itemNameDiv = itemElement.querySelector('.item-name');
-        const itemActionsDiv = itemElement.querySelector('.item-actions');
+        // Скрываем форму редактирования
         const editForm = itemElement.querySelector(`#inlineEdit_${name.replace(/[^a-zA-Z0-9]/g, '_')}`);
-        
-        if (itemNameDiv) itemNameDiv.style.display = '';
-        if (itemActionsDiv) itemActionsDiv.style.display = '';
         if (editForm) editForm.style.display = 'none';
         
         // Восстанавливаем оригинальные значения
-        if (originalItemData[name]) {
+        if (originalItemData[name] && editForm) {
             const nameInput = editForm.querySelector('.inline-edit-name');
             const categorySelect = editForm.querySelector('.inline-edit-category');
             const prioritySelect = editForm.querySelector('.inline-edit-priority');
