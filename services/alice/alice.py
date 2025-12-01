@@ -11,12 +11,22 @@ GESHTALT_PORT = '8080'
 BASE_URL = f'http://{GESHTALT_HOST}:{GESHTALT_PORT}/internal/api'
 
 # Получаем user_id для сервиса из .env
+# Поддерживаем как SERVICE_USER_ID (один пользователь), так и SERVICE_USER_IDS (несколько пользователей)
 SERVICE_USER_ID = os.getenv("SERVICE_USER_ID", "")
+SERVICE_USER_IDS = os.getenv("SERVICE_USER_IDS", "")
 
 # Формируем заголовки для внутреннего API
+# Если SERVICE_USER_IDS установлен, используем его (для двух пользователей - муж и жена)
+# Иначе используем SERVICE_USER_ID
 def get_headers():
     headers = {"Content-Type": "application/json"}
-    if SERVICE_USER_ID:
+    # SERVICE_USER_IDS имеет приоритет (для работы с двумя пользователями)
+    if SERVICE_USER_IDS:
+        # Используем первый пользователь из списка для добавления элементов
+        first_user = SERVICE_USER_IDS.split(',')[0].strip()
+        if first_user:
+            headers["X-User-ID"] = first_user
+    elif SERVICE_USER_ID:
         headers["X-User-ID"] = SERVICE_USER_ID
     return headers
 
