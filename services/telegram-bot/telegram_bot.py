@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import requests
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -73,12 +74,25 @@ def get_list_keyboard(current_category):
     ]
     return InlineKeyboardMarkup(keyboard)
 
+def encode_item_name(item_name):
+    """Кодирует имя элемента в base64 для безопасной передачи в callback_data."""
+    return base64.urlsafe_b64encode(item_name.encode('utf-8')).decode('ascii')
+
+def decode_item_name(encoded_name):
+    """Декодирует имя элемента из base64."""
+    try:
+        return base64.urlsafe_b64decode(encoded_name.encode('ascii')).decode('utf-8')
+    except Exception as e:
+        logging.error(f"Ошибка декодирования имени элемента: {e}")
+        return ""
+
 def get_item_actions_keyboard(item_name, category):
     """Возвращает клавиатуру для действий с элементом."""
+    encoded_name = encode_item_name(item_name)
     keyboard = [
-        [InlineKeyboardButton("Удалить", callback_data=f"item_action:delete:{item_name}:{category}")],
-        [InlineKeyboardButton("Сменить категорию", callback_data=f"item_action:change_cat:{item_name}:{category}")],
-        [InlineKeyboardButton("Сменить приоритет", callback_data=f"item_action:change_pri:{item_name}:{category}")],
+        [InlineKeyboardButton("Удалить", callback_data=f"item_action:delete:{encoded_name}:{category}")],
+        [InlineKeyboardButton("Сменить категорию", callback_data=f"item_action:change_cat:{encoded_name}:{category}")],
+        [InlineKeyboardButton("Сменить приоритет", callback_data=f"item_action:change_pri:{encoded_name}:{category}")],
         [InlineKeyboardButton("Назад", callback_data=f"list:{category}")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -186,7 +200,22 @@ async def show_item_actions(update: Update, context):
     if not data.startswith("item:"):
         return
 
-    item_name, category = data.split(":")[1:3]
+    # Разбираем callback_data: item:encoded_name:category
+    parts = data.split(":", 2)
+    if len(parts) < 3:
+        logging.error(f"Неверный формат callback_data: {data}")
+        await query.message.reply_text("Ошибка: неверный формат данных")
+        return
+    
+    encoded_name = parts[1]
+    category = parts[2]
+    item_name = decode_item_name(encoded_name)
+    
+    if not item_name:
+        logging.error(f"Не удалось декодировать имя элемента из: {encoded_name}")
+        await query.message.reply_text("Ошибка: не удалось декодировать данные")
+        return
+    
     context.user_data["item_name"] = item_name
     context.user_data["category"] = category
 
@@ -202,7 +231,23 @@ async def handle_item_action(update: Update, context):
     if not data.startswith("item_action:"):
         return
 
-    action, item_name, category = data.split(":")[1:4]
+    # Разбираем callback_data: item_action:action:encoded_name:category
+    parts = data.split(":", 3)
+    if len(parts) < 4:
+        logging.error(f"Неверный формат callback_data: {data}")
+        await query.message.reply_text("Ошибка: неверный формат данных")
+        return
+    
+    action = parts[1]
+    encoded_name = parts[2]
+    category = parts[3]
+    item_name = decode_item_name(encoded_name)
+    
+    if not item_name:
+        logging.error(f"Не удалось декодировать имя элемента из: {encoded_name}")
+        await query.message.reply_text("Ошибка: не удалось декодировать данные")
+        return
+    
     context.user_data["item_name"] = item_name
     context.user_data["category"] = category
 
@@ -458,6 +503,22 @@ async def button_callback(update: Update, context):
     if data.startswith("item:"):
         await show_item_actions(update, context)
         return
+    if data.startswith("item_idx:"):
+        # Обработка callback_data с индексом элемента (для длинных имен)
+        parts = data.split(":", 2)
+        if len(parts) >= 3:
+            item_index = int(parts[1])
+            category = parts[2]
+            item_key = f"{category}:{item_index}"
+            item_name = context.user_data.get('item_indices', {}).get(item_key)
+            if item_name:
+                encoded_name = encode_item_name(item_name)
+                # Создаем временный callback_data для show_item_actions
+                query.data = f"item:{encoded_name}:{category}"
+                await show_item_actions(update, context)
+            else:
+                await query.message.reply_text("Ошибка: элемент не найден")
+        return
     if data.startswith("item_action:"):
         await handle_item_action(update, context)
         return
@@ -525,12 +586,22 @@ async def show_list(update: Update, context, list_type):
             priority = item["priority"]
             emoji = PRIORITY_EMOJI.get(priority, "🟡")
             response_text += f"- {emoji} {item['name']}\n"
-            max_name_length = 50
-            safe_name = item['name'][:max_name_length].encode('utf-8').decode('utf-8', 'ignore')
-            callback_data = f"item:{safe_name}:{list_type}"
+            
+            # Кодируем имя элемента в base64 для безопасной передачи
+            encoded_name = encode_item_name(item['name'])
+            callback_data = f"item:{encoded_name}:{list_type}"
+            
+            # Проверяем длину callback_data (лимит Telegram - 64 байта)
             if len(callback_data.encode('utf-8')) > 64:
-                logging.error(f"Callback data too long for item: {item['name']} in category: {list_type}")
-                continue
+                logging.warning(f"Callback data too long for item: {item['name']} in category: {list_type}, используем индекс")
+                # Если слишком длинный, используем индекс элемента в списке
+                item_index = items.index(item)
+                callback_data = f"item_idx:{item_index}:{list_type}"
+                # Сохраняем имя в context для последующего использования
+                if 'item_indices' not in context.user_data:
+                    context.user_data['item_indices'] = {}
+                context.user_data['item_indices'][f"{list_type}:{item_index}"] = item['name']
+            
             keyboard.append([InlineKeyboardButton(f"{emoji} {item['name']}", callback_data=callback_data)])
 
         keyboard.append([])
