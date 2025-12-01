@@ -738,11 +738,6 @@
             const itemName = item.querySelector('.item-name');
             if (itemName) {
                 itemName.addEventListener('click', function(e) {
-                    // Не открываем редактирование, если был drag
-                    if (isDragging || (Date.now() - dragStartTime < 200)) {
-                        return;
-                    }
-                    
                     const name = item.getAttribute('data-name');
                     const category = item.getAttribute('data-category');
                     const priority = parseInt(item.getAttribute('data-priority')) || 2;
