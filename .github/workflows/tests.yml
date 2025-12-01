@@ -73,4 +73,10 @@ jobs:
       with:
         file: ./backend/coverage.xml
         fail_ci_if_error: false
+    
+    - name: Check test results
+      if: failure()
+      run: |
+        echo "Тесты провалились. Проверьте логи выше."
+        exit 1
 
