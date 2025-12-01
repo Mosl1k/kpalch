@@ -39,8 +39,13 @@
             {% for item in items %}
             <li class="shopping-item priority-{% if item.priority == 3 %}high{% elif item.priority == 2 %}medium{% else %}low{% endif %} {% if item.bought %}bought{% endif %}" 
                 data-name="{{ item.name }}" 
-                data-category="{{ item.category.name }}">
-                <div class="item-name">
+                data-category="{{ item.category.name }}"
+                draggable="true"
+                ondragstart="handleDragStart(event)"
+                ondragover="handleDragOver(event)"
+                ondrop="handleDrop(event)"
+                ondragend="handleDragEnd(event)">
+                <div class="item-name" onclick="editItem('{{ item.name|escapejs }}', '{{ item.category.name|escapejs }}', {{ item.priority }})">
                     <span class="priority-icon">
                         {% if item.priority == 3 %}🔥
                         {% elif item.priority == 2 %}🟡
@@ -81,6 +86,31 @@
             Удалить все
         </button>
     </div>
+        
+        <!-- Форма редактирования элемента -->
+        <div class="edit-form" id="editForm" style="display: none;">
+            <h3>Редактировать элемент</h3>
+            <div class="form-group">
+                <input type="text" 
+                       id="editItemName" 
+                       placeholder="Название элемента"
+                       onkeypress="if(event.key === 'Enter') saveEditItem(); if(event.key === 'Escape') cancelEdit();">
+                <select id="editItemCategory">
+                    {% for category in categories %}
+                    <option value="{{ category.name }}">
+                        {{ category.display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select id="editItemPriority">
+                    <option value="1">Низкий приоритет</option>
+                    <option value="2" selected>Средний приоритет</option>
+                    <option value="3">Высокий приоритет</option>
+                </select>
+                <button class="btn btn-primary" onclick="saveEditItem()">Сохранить</button>
+                <button class="btn btn-secondary" onclick="cancelEdit()">Отмена</button>
+            </div>
+        </div>
         
         <div class="add-form">
             <h3>Добавить элемент</h3>
@@ -234,6 +264,14 @@
 {% csrf_token %}
     <script>
     const currentCategory = '{% if current_category %}{{ current_category }}{% else %}купить{% endif %}';
+    
+    // Переменные для редактирования
+    let editingItemName = null;
+    let editingItemCategory = null;
+    
+    // Переменные для drag and drop
+    let draggedElement = null;
+    let draggedIndex = null;
     
     function getCSRFToken() {
         // Сначала пытаемся получить из скрытого input
@@ -638,6 +676,182 @@
             }
         });
     });
+    
+    // Функции для редактирования элементов
+    function editItem(name, category, priority) {
+        // Скрываем форму добавления, показываем форму редактирования
+        document.querySelector('.add-form').style.display = 'none';
+        const editForm = document.getElementById('editForm');
+        editForm.style.display = 'block';
+        
+        // Заполняем форму данными элемента
+        document.getElementById('editItemName').value = name;
+        document.getElementById('editItemCategory').value = category;
+        document.getElementById('editItemPriority').value = priority;
+        
+        // Сохраняем оригинальные значения
+        editingItemName = name;
+        editingItemCategory = category;
+        
+        // Фокусируемся на поле ввода
+        document.getElementById('editItemName').focus();
+        document.getElementById('editItemName').select();
+    }
+    
+    async function saveEditItem() {
+        const newName = document.getElementById('editItemName').value.trim();
+        const newCategory = document.getElementById('editItemCategory').value;
+        const newPriority = parseInt(document.getElementById('editItemPriority').value);
+        
+        if (!newName) {
+            alert('Введите название элемента');
+            return;
+        }
+        
+        if (!editingItemName || !editingItemCategory) {
+            alert('Ошибка: не найден редактируемый элемент');
+            return;
+        }
+        
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/edit/${encodeURIComponent(editingItemName)}?oldCategory=${encodeURIComponent(editingItemCategory)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: newName,
+                    category: newCategory,
+                    priority: newPriority
+                })
+            });
+            
+            if (response.ok) {
+                // Если категория изменилась, перезагружаем страницу с новой категорией
+                if (newCategory !== editingItemCategory) {
+                    window.location.href = `/?category=${encodeURIComponent(newCategory)}`;
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при редактировании элемента');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при редактировании элемента: ' + error.message);
+        }
+    }
+    
+    function cancelEdit() {
+        document.getElementById('editForm').style.display = 'none';
+        document.querySelector('.add-form').style.display = 'block';
+        editingItemName = null;
+        editingItemCategory = null;
+    }
+    
+    // Функции для drag and drop
+    function handleDragStart(e) {
+        draggedElement = this;
+        draggedIndex = Array.from(this.parentNode.children).indexOf(this);
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+    }
+    
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        
+        const target = e.currentTarget;
+        if (target !== draggedElement) {
+            target.classList.add('drag-over');
+        }
+        return false;
+    }
+    
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        // Убираем класс drag-over со всех элементов
+        document.querySelectorAll('.shopping-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
+    }
+    
+    async function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        e.preventDefault();
+        
+        const target = e.currentTarget;
+        target.classList.remove('drag-over');
+        
+        if (draggedElement !== target) {
+            const allItems = Array.from(target.parentNode.children);
+            const targetIndex = allItems.indexOf(target);
+            const draggedIndex = allItems.indexOf(draggedElement);
+            
+            // Перемещаем элемент в DOM
+            if (draggedIndex < targetIndex) {
+                target.parentNode.insertBefore(draggedElement, target.nextSibling);
+            } else {
+                target.parentNode.insertBefore(draggedElement, target);
+            }
+            
+            // Сохраняем новый порядок на сервере
+            await saveItemOrder();
+        }
+        
+        return false;
+    }
+    
+    async function saveItemOrder() {
+        const items = Array.from(document.querySelectorAll('.shopping-item'));
+        const itemsData = items.map((item, index) => ({
+            name: item.getAttribute('data-name'),
+            category: item.getAttribute('data-category')
+        }));
+        
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/reorder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include',
+                body: JSON.stringify(itemsData)
+            });
+            
+            if (!response.ok) {
+                console.error('Error saving order:', response.status);
+                // Откатываем изменения при ошибке
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Error saving order:', error);
+            // Откатываем изменения при ошибке
+            window.location.reload();
+        }
+    }
     
     // Закрываем форму добавления категории при клике вне её
     document.addEventListener('click', function(event) {
