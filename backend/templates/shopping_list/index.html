@@ -161,7 +161,7 @@
         align-items: center;
         gap: 0.5rem;
         flex-wrap: wrap;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .add-category-btn {
         width: auto;
@@ -357,7 +357,7 @@
     }
     
     .btn-nav {
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 2rem;
         font-size: 1.5rem;
         font-weight: 600;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -367,7 +367,9 @@
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         transition: all 0.3s;
-        min-width: 60px;
+        min-width: 80px;
+        position: relative;
+        z-index: 1001;
     }
     
     .btn-nav:hover {
@@ -414,9 +416,9 @@
         }
         
         .btn-nav {
-            padding: 0.6rem 1rem;
+            padding: 0.6rem 1.5rem;
             font-size: 1.3rem;
-            min-width: 50px;
+            min-width: 70px;
         }
         
         .btn-add-item {
