@@ -271,16 +271,15 @@
             {% if user.is_authenticated %}
             <div class="user-menu">
                 <div class="user-menu-dropdown">
-                    <div class="user-info">
+                    <div class="user-info" onclick="toggleUserMenu()">
                         {% if user.profile.avatar_url %}
-                        <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar" onclick="toggleUserMenu()">
+                        <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar">
                         {% else %}
-                        <div class="avatar" onclick="toggleUserMenu()">{{ user.username.0|upper }}</div>
+                        <div class="avatar">{{ user.username.0|upper }}</div>
                         {% endif %}
-                        <a href="{% url 'friends' %}" class="user-name-link" title="Управление друзьями">
+                        <span class="user-name-link" style="cursor: pointer;">
                             {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
-                        </a>
-                        <span style="margin-left: 0.5rem; cursor: pointer;" onclick="toggleUserMenu()" title="Меню пользователя">▼</span>
+                        </span>
                     </div>
                     <div class="dropdown-menu" id="userDropdownMenu">
                         <div class="dropdown-item" style="font-weight: 500; color: #666;">
