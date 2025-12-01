@@ -1207,21 +1207,35 @@
     
     // Функция навигации по категориям
     function navigateCategory(direction) {
-        if (allCategories.length === 0) return;
+        console.log('[navigateCategory] Called with direction:', direction);
+        console.log('[navigateCategory] allCategories:', allCategories);
+        console.log('[navigateCategory] currentCategoryIndex:', currentCategoryIndex);
+        
+        if (allCategories.length === 0) {
+            console.error('[navigateCategory] No categories available');
+            return;
+        }
         
         if (direction === 'left') {
             currentCategoryIndex = currentCategoryIndex > 0 ? currentCategoryIndex - 1 : allCategories.length - 1;
-        } else {
+        } else if (direction === 'right') {
             currentCategoryIndex = currentCategoryIndex < allCategories.length - 1 ? currentCategoryIndex + 1 : 0;
+        } else {
+            console.error('[navigateCategory] Invalid direction:', direction);
+            return;
         }
         
         const newCategory = allCategories[currentCategoryIndex];
+        console.log('[navigateCategory] New category:', newCategory);
+        
         if (newCategory) {
             // Сохраняем в localStorage
             localStorage.setItem('lastCategory', newCategory);
             
             // Переходим на новую категорию
             window.location.href = `/?category=${encodeURIComponent(newCategory)}`;
+        } else {
+            console.error('[navigateCategory] New category is empty');
         }
     }
     
