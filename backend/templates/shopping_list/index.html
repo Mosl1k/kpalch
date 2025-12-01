@@ -40,7 +40,8 @@
             <li class="shopping-item priority-{% if item.priority == 3 %}high{% elif item.priority == 2 %}medium{% else %}low{% endif %} {% if item.bought %}bought{% endif %}" 
                 data-name="{{ item.name }}" 
                 data-category="{{ item.category.name }}"
-                data-priority="{{ item.priority }}">
+                data-priority="{{ item.priority }}"
+                ondblclick="editItem('{{ item.name|escapejs }}', '{{ item.category.name|escapejs }}', {{ item.priority }})">
                 <div class="item-name">
                     <span class="priority-icon">
                         {% if item.priority == 3 %}🔥
@@ -91,14 +92,14 @@
     </div>
         
         
-        <!-- Форма редактирования элемента -->
-        <div class="edit-form" id="editForm" style="display: none;">
-            <h3>Редактировать элемент</h3>
-            <div class="form-group">
+        <!-- Модальное окно редактирования (скрыто по умолчанию) -->
+        <div id="editModal" style="display: none;">
+            <div>
+                <h3>Редактировать элемент</h3>
                 <input type="text" 
                        id="editItemName" 
                        placeholder="Название элемента"
-                       onkeypress="if(event.key === 'Enter') saveEditItem(); if(event.key === 'Escape') cancelEdit();">
+                       onkeypress="if(event.key === 'Enter') saveEditItem(); if(event.key === 'Escape') closeEditModal();">
                 <select id="editItemCategory">
                     {% for category in categories %}
                     <option value="{{ category.name }}">
@@ -112,40 +113,39 @@
                     <option value="3">Высокий приоритет</option>
                 </select>
                 <button class="btn btn-primary" onclick="saveEditItem()">Сохранить</button>
-                <button class="btn btn-secondary" onclick="cancelEdit()">Отмена</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
             </div>
         </div>
         
-        <!-- Форма добавления (скрыта по умолчанию) -->
-        <div class="add-form" id="addForm" style="display: none;">
-            <h3>Добавить элемент</h3>
-        <div class="form-group">
-            <input type="text" 
-                   id="itemName" 
-                   placeholder="Название элемента"
-                   autofocus
-                   onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') toggleAddForm();">
-            <select id="itemCategory">
-                {% for category in categories %}
-                <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
-                    {{ category.display_name }}
-                </option>
-                {% endfor %}
-            </select>
-            <select id="itemPriority">
-                <option value="1">Низкий приоритет</option>
-                <option value="2" selected>Средний приоритет</option>
-                <option value="3">Высокий приоритет</option>
-            </select>
-            <button class="btn btn-primary" onclick="addItem()">Добавить</button>
-                <button class="btn btn-secondary" onclick="toggleAddForm()">Отмена</button>
-        </div>
+        <!-- Модальное окно добавления (скрыто по умолчанию) -->
+        <div id="addModal" style="display: none;">
+            <div>
+                <h3>Добавить элемент</h3>
+                <input type="text" 
+                       id="itemName" 
+                       placeholder="Название элемента"
+                       onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') closeAddModal();">
+                <select id="itemCategory">
+                    {% for category in categories %}
+                    <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
+                        {{ category.display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select id="itemPriority">
+                    <option value="1">Низкий приоритет</option>
+                    <option value="2" selected>Средний приоритет</option>
+                    <option value="3">Высокий приоритет</option>
+                </select>
+                <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+                <button class="btn btn-secondary" onclick="closeAddModal()">Отмена</button>
+            </div>
         </div>
     
     <!-- Фиксированная панель навигации внизу -->
     <div class="nav-buttons">
         <button class="btn btn-nav" onclick="navigateCategory('left')" title="Предыдущая категория">←</button>
-        <button class="btn btn-add-item" onclick="toggleAddForm()" title="Добавить элемент">
+        <button class="btn btn-add-item" onclick="openAddModal()" title="Добавить элемент">
             <span class="plus-icon">+</span>
         </button>
         <button class="btn btn-nav" onclick="navigateCategory('right')" title="Следующая категория">→</button>
@@ -316,18 +316,69 @@
         flex: 1;
     }
     
-    /* Форма редактирования */
-    .edit-form {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-top: 1rem;
+    /* Модальные окна (добавление и редактирование) */
+    #addModal, #editModal {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
     }
     
-    .edit-form h3 {
+    #addModal > div, #editModal > div {
+        max-width: 400px;
+        width: 100%;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        position: relative;
+    }
+    
+    #addModal h3, #editModal h3 {
         margin-top: 0;
         margin-bottom: 1rem;
+    }
+    
+    #addModal input, #editModal input,
+    #addModal select, #editModal select {
+        font-size: 18px;
+        padding: 10px;
+        margin: 10px 0;
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    #addModal button, #editModal button {
+        font-size: 18px;
+        padding: 10px 20px;
+        margin: 10px 10px 10px 0;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+    }
+    
+    #addModal button:last-child, #editModal button:last-child {
+        margin-right: 0;
+    }
+    
+    @media (max-width: 480px) {
+        #addModal, #editModal {
+            padding: 10px;
+        }
+        #addModal > div, #editModal > div {
+            padding: 15px;
+            margin: 10px auto;
+        }
     }
     
     .item-actions {
@@ -552,7 +603,7 @@
             
             if (response.ok) {
                 document.getElementById('itemName').value = '';
-                toggleAddForm(); // Скрываем форму после успешного добавления
+                closeAddModal(); // Закрываем модальное окно после успешного добавления
                 window.location.reload();
             } else {
                 const data = await response.json();
@@ -969,17 +1020,14 @@
     }
     
     // Функции для редактирования элементов
-    function openEditForm(name, category, priority) {
+    function editItem(name, category, priority) {
+        console.log('[editItem] Called with:', name, category, priority);
         currentEditItem = name;
         
-        // Скрываем форму добавления, показываем форму редактирования
-        const addForm = document.querySelector('.add-form');
-        if (addForm) {
-            addForm.style.display = 'none';
-        }
-        const editForm = document.getElementById('editForm');
-        if (editForm) {
-            editForm.style.display = 'block';
+        const editModal = document.getElementById('editModal');
+        if (!editModal) {
+            console.error('[editItem] editModal element not found');
+            return;
         }
         
         // Заполняем форму данными элемента
@@ -998,32 +1046,40 @@
             priority: priority
         };
         
-        // Фокусируемся на поле ввода
-        if (nameInput) {
-            nameInput.focus();
-            nameInput.select();
-        }
+        // Показываем модальное окно
+        editModal.style.display = 'flex';
         
-        // Прокручиваем к форме редактирования
-        if (editForm) {
-            editForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Фокусируемся на поле ввода и выделяем текст
+        if (nameInput) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    nameInput.focus();
+                    nameInput.select();
+                });
+            });
         }
     }
     
-    function cancelEdit() {
-        const editForm = document.getElementById('editForm');
-        if (editForm) {
-            editForm.style.display = 'none';
-        }
-        const addForm = document.querySelector('.add-form');
-        if (addForm) {
-            addForm.style.display = 'block';
+    // Старая функция для совместимости
+    function openEditForm(name, category, priority) {
+        editItem(name, category, priority);
+    }
+    
+    function closeEditModal() {
+        const editModal = document.getElementById('editModal');
+        if (editModal) {
+            editModal.style.display = 'none';
         }
         
         if (currentEditItem) {
             delete originalItemData[currentEditItem];
         }
         currentEditItem = null;
+    }
+    
+    // Старая функция для совместимости
+    function cancelEdit() {
+        closeEditModal();
     }
     
     async function saveEditItem() {
@@ -1151,62 +1207,78 @@
         }
     }
     
-    // Функция для показа/скрытия формы добавления элемента
-    function toggleAddForm() {
-        console.log('[toggleAddForm] Called');
-        const addForm = document.getElementById('addForm');
-        if (!addForm) {
-            console.error('[toggleAddForm] addForm element not found');
+    // Функция для открытия модального окна добавления
+    function openAddModal() {
+        console.log('[openAddModal] Called');
+        const addModal = document.getElementById('addModal');
+        if (!addModal) {
+            console.error('[openAddModal] addModal element not found');
             return;
         }
         
-        const isHidden = addForm.style.display === 'none' || addForm.style.display === '';
-        console.log('[toggleAddForm] Current display:', addForm.style.display, 'isHidden:', isHidden);
+        // Очищаем форму
+        const nameInput = document.getElementById('itemName');
+        const categorySelect = document.getElementById('itemCategory');
+        const prioritySelect = document.getElementById('itemPriority');
         
-        if (isHidden) {
-            addForm.style.display = 'block';
-            // Прокручиваем к форме для мобильных устройств
-            addForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
-            // Фокусируемся на поле ввода сразу и выделяем текст (если есть)
-            const nameInput = document.getElementById('itemName');
-            if (nameInput) {
-                // Используем requestAnimationFrame для гарантированного фокуса после отображения
+        if (nameInput) nameInput.value = '';
+        if (categorySelect) categorySelect.value = currentCategory || 'купить';
+        if (prioritySelect) prioritySelect.value = '2';
+        
+        // Показываем модальное окно
+        addModal.style.display = 'flex';
+        
+        // Фокусируемся на поле ввода
+        if (nameInput) {
+            requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        nameInput.focus();
-                        nameInput.select();
-                        // Дополнительная попытка фокуса для мобильных устройств
-                        if (document.activeElement !== nameInput) {
-                            nameInput.click();
-                            nameInput.focus();
-                        }
-                    });
+                    nameInput.focus();
+                    nameInput.select();
                 });
-            }
-        } else {
-            addForm.style.display = 'none';
-            // Очищаем форму
-            const nameInput = document.getElementById('itemName');
-            if (nameInput) nameInput.value = '';
+            });
         }
     }
     
-    // Закрываем форму добавления категории при клике вне её
-    document.addEventListener('click', function(event) {
+    // Функция для закрытия модального окна добавления
+    function closeAddModal() {
+        const addModal = document.getElementById('addModal');
+        if (addModal) {
+            addModal.style.display = 'none';
+        }
+    }
+    
+    // Старая функция для совместимости
+    function toggleAddForm() {
+        const addModal = document.getElementById('addModal');
+        if (addModal && addModal.style.display === 'none') {
+            openAddModal();
+        } else {
+            closeAddModal();
+        }
+    }
+    
+    // Закрываем модальные окна при клике вне их
+    window.onclick = function(event) {
+        const addModal = document.getElementById('addModal');
+        const editModal = document.getElementById('editModal');
         const categoryNav = document.querySelector('.category-nav');
         const addCategoryForm = document.getElementById('addCategoryForm');
+        
+        // Закрываем модальное окно добавления
+        if (event.target == addModal) {
+            closeAddModal();
+        }
+        
+        // Закрываем модальное окно редактирования
+        if (event.target == editModal) {
+            closeEditModal();
+        }
+        
+        // Закрываем форму добавления категории
         if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
             addCategoryForm.style.display = 'none';
         }
-        
-        // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
-        const addForm = document.getElementById('addForm');
-        const navButtons = document.querySelector('.nav-buttons');
-        if (addForm && navButtons && !navButtons.contains(event.target) && !addForm.contains(event.target)) {
-            addForm.style.display = 'none';
-        }
-    });
+    };
     
     // Функция навигации по категориям
     function navigateCategory(direction) {
