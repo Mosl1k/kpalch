@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
@@ -89,12 +90,18 @@ def decode_item_name(encoded_name):
 def get_item_actions_keyboard(item_name, category):
     """Возвращает клавиатуру для действий с элементом."""
     encoded_name = encode_item_name(item_name)
-    keyboard = [
+    keyboard = []
+    
+    # Для категории "купить" добавляем кнопку "Отправить в холодильник"
+    if category == "купить":
+        keyboard.append([InlineKeyboardButton("❄️ Отправить в холодильник", callback_data=f"item_action:send_to_fridge:{encoded_name}:{category}")])
+    
+    keyboard.extend([
         [InlineKeyboardButton("Удалить", callback_data=f"item_action:delete:{encoded_name}:{category}")],
         [InlineKeyboardButton("Сменить категорию", callback_data=f"item_action:change_cat:{encoded_name}:{category}")],
         [InlineKeyboardButton("Сменить приоритет", callback_data=f"item_action:change_pri:{encoded_name}:{category}")],
         [InlineKeyboardButton("Назад", callback_data=f"list:{category}")]
-    ]
+    ])
     return InlineKeyboardMarkup(keyboard)
 
 async def start(update: Update, context):
@@ -291,6 +298,78 @@ async def handle_item_action(update: Update, context):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.message.reply_text(f"Выберите новый приоритет для '{item_name}' в {LISTS[category]}:", reply_markup=reply_markup)
+    elif action == "send_to_fridge":
+        # Отправка элемента из "купить" в "холодос" с добавлением даты
+        if category != "купить":
+            await query.message.reply_text("Эта функция доступна только для элементов из списка покупок")
+            return
+        
+        try:
+            headers = {"Content-Type": "application/json"}
+            if SERVICE_USER_ID:
+                headers["X-User-ID"] = SERVICE_USER_ID
+
+            # Получаем элемент из категории "купить"
+            response = requests.get(f"{API_URL}/list?category=купить", headers=headers)
+            if response.status_code != 200:
+                error_msg = f"Ошибка получения данных: {response.status_code} - {response.text}"
+                logging.error(error_msg)
+                await query.message.reply_text(error_msg)
+                return
+
+            try:
+                items = response.json()
+            except json.JSONDecodeError as e:
+                error_msg = f"Ошибка парсинга JSON: {e}. Ответ: {response.text[:200]}"
+                logging.error(error_msg)
+                await query.message.reply_text(f"Ошибка подключения к API: {e}")
+                return
+            
+            item = next((i for i in items if i["name"] == item_name), None)
+            if not item:
+                await query.message.reply_text(f"Элемент '{item_name}' не найден в {LISTS[category]}")
+                return
+
+            # Формируем новое имя с датой (формат: название (01.12.2025))
+            current_date = datetime.now().strftime("%d.%m.%Y")
+            new_item_name = f"{item_name} ({current_date})"
+            
+            # Создаем элемент в категории "холодос"
+            new_item_data = {
+                "name": new_item_name,
+                "category": "холодос",
+                "bought": False,
+                "priority": item.get("priority", 2)
+            }
+            
+            response = requests.post(f"{API_URL}/add", headers=headers, json=new_item_data)
+            if response.status_code not in [200, 201]:
+                error_msg = f"Ошибка добавления в холодильник: {response.status_code} - {response.text}"
+                logging.error(error_msg)
+                await query.message.reply_text(error_msg)
+                return
+
+            # Удаляем элемент из категории "купить"
+            response = requests.delete(f"{API_URL}/delete/{item_name}?category=купить", headers=headers)
+            if response.status_code != 200:
+                error_msg = f"Ошибка удаления из покупок: {response.status_code} - {response.text}"
+                logging.error(error_msg)
+                await query.message.reply_text(error_msg)
+                return
+
+            reply_markup = get_list_keyboard("холодос")
+            await query.message.reply_text(
+                f"✅ '{item_name}' отправлен в холодильник с датой {current_date}",
+                reply_markup=reply_markup
+            )
+        except requests.RequestException as e:
+            error_msg = f"Ошибка подключения к API: {e}"
+            logging.error(error_msg)
+            await query.message.reply_text(error_msg)
+        except Exception as e:
+            error_msg = f"Произошла ошибка: {str(e)}"
+            logging.error(error_msg)
+            await query.message.reply_text(error_msg)
 
 async def change_category_to(update: Update, context):
     """Обработчик выбора новой категории."""
