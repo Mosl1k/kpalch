@@ -53,7 +53,7 @@ if [ -f "$PROJECT_ROOT/scripts/load-secrets.sh" ]; then
     "$PROJECT_ROOT/scripts/load-secrets.sh" || warn "Не удалось загрузить секреты, используем существующий .env"
 fi
 
-info "Умный деплой Gestalt"
+info "Умный деплой Kpalch (Django)"
 info "Сравнение с: $BASE_BRANCH"
 echo ""
 
@@ -107,13 +107,13 @@ else
         debug "Анализ файла: $file"
         
         # Бекенд (Django)
-        if [[ "$file" == backend/* ]] || [[ "$file" == "backend_django/*" ]]; then
+        if [[ "$file" == backend/* ]]; then
             SERVICES_MAP["geshtalt"]=1
             debug "  → geshtalt (изменен: $file)"
         fi
         
         # Django requirements
-        if [[ "$file" == "requirements.txt" ]] || [[ "$file" == "backend/requirements.txt" ]]; then
+        if [[ "$file" == "backend/requirements.txt" ]]; then
             SERVICES_MAP["geshtalt"]=1
             debug "  → geshtalt (изменен requirements.txt)"
         fi
@@ -165,17 +165,15 @@ else
             debug "  → nginx (изменена конфигурация)"
         fi
         
-        # Redis конфигурация - только перезапуск (не пересборка)
-        if [[ "$file" == infra/redis/* ]]; then
-            SERVICES_MAP["redis"]=1
-            debug "  → redis (изменена конфигурация)"
-        fi
+        # PostgreSQL конфигурация - только перезапуск (не пересборка)
+        # PostgreSQL не пересобираем, только перезапускаем при необходимости
     done <<< "$CHANGED_FILES"
 fi
 
 # Формируем список сервисов
 if [ "$REBUILD_ALL" = true ]; then
-    UNIQUE_SERVICES=("postgres" "geshtalt" "alice" "telegram-bot" "nginx")
+    UNIQUE_SERVICES=("geshtalt" "alice" "telegram-bot" "nginx")
+    # postgres не пересобираем, только перезапускаем если нужно
 else
     UNIQUE_SERVICES=($(printf '%s\n' "${!SERVICES_MAP[@]}" | sort -u))
 fi
@@ -209,17 +207,17 @@ if [ "$NEED_FULL_DOWN" = true ]; then
     docker-compose stop "${UNIQUE_SERVICES[@]}" 2>/dev/null || true
     # Удаляем контейнеры для пересборки
     for service in "${UNIQUE_SERVICES[@]}"; do
-        if [ "$service" != "redis" ]; then
+        if [ "$service" != "postgres" ]; then
             docker-compose rm -f "$service" 2>/dev/null || true
         fi
     done
 else
     info "Остановка сервисов..."
     for service in "${UNIQUE_SERVICES[@]}"; do
-        if [ "$service" = "redis" ]; then
-            # Redis не пересобираем, только перезапускаем
-            info "Перезапуск redis..."
-            docker-compose restart redis || true
+        if [ "$service" = "postgres" ]; then
+            # PostgreSQL не пересобираем, только перезапускаем если нужно
+            info "Перезапуск postgres..."
+            docker-compose restart postgres || true
         else
             info "Остановка $service..."
             docker-compose stop "$service" 2>/dev/null || true
@@ -232,8 +230,8 @@ fi
 # Пересобираем только нужные сервисы
 info "Пересборка сервисов..."
 for service in "${UNIQUE_SERVICES[@]}"; do
-    if [ "$service" = "redis" ]; then
-        continue  # Redis не пересобираем
+    if [ "$service" = "postgres" ]; then
+        continue  # PostgreSQL не пересобираем
     fi
     info "Сборка $service..."
     docker-compose build "$service"
@@ -242,12 +240,18 @@ done
 # Запускаем сервисы
 info "Запуск сервисов..."
 for service in "${UNIQUE_SERVICES[@]}"; do
-    if [ "$service" = "redis" ]; then
-        continue  # Redis уже перезапущен
+    if [ "$service" = "postgres" ]; then
+        continue  # PostgreSQL уже перезапущен или не нужно перезапускать
     fi
     info "Запуск $service..."
     docker-compose up -d "$service"
 done
+
+# Применяем миграции если изменился Django код
+if [[ " ${UNIQUE_SERVICES[@]} " =~ " geshtalt " ]]; then
+    info "Применение миграций Django..."
+    docker-compose exec -T geshtalt python manage.py migrate --noinput || warn "Не удалось применить миграции"
+fi
 
 # Показываем статус
 echo ""
