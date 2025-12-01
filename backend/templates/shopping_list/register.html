@@ -30,8 +30,12 @@
                    id="{{ form.username.id_for_label }}"
                    value="{{ form.username.value|default:'' }}"
                    required
-                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
-            {% if form.username.help_text %}
+                   style="width: 100%; padding: 0.75rem; border: 1px solid {% if form.username.errors %}#c33{% else %}#ddd{% endif %}; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.username.errors %}
+            <div style="color: #c33; font-size: 0.85rem; margin-top: 0.25rem;">
+                {{ form.username.errors.0 }}
+            </div>
+            {% elif form.username.help_text %}
             <small style="color: #666; font-size: 0.85rem;">{{ form.username.help_text }}</small>
             {% endif %}
         </div>
@@ -45,8 +49,12 @@
                    id="{{ form.email.id_for_label }}"
                    value="{{ form.email.value|default:'' }}"
                    required
-                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
-            {% if form.email.help_text %}
+                   style="width: 100%; padding: 0.75rem; border: 1px solid {% if form.email.errors %}#c33{% else %}#ddd{% endif %}; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.email.errors %}
+            <div style="color: #c33; font-size: 0.85rem; margin-top: 0.25rem;">
+                {{ form.email.errors.0 }}
+            </div>
+            {% elif form.email.help_text %}
             <small style="color: #666; font-size: 0.85rem;">{{ form.email.help_text }}</small>
             {% endif %}
         </div>
@@ -59,8 +67,12 @@
                    name="{{ form.password1.name }}" 
                    id="{{ form.password1.id_for_label }}"
                    required
-                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
-            {% if form.password1.help_text %}
+                   style="width: 100%; padding: 0.75rem; border: 1px solid {% if form.password1.errors %}#c33{% else %}#ddd{% endif %}; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.password1.errors %}
+            <div style="color: #c33; font-size: 0.85rem; margin-top: 0.25rem;">
+                {{ form.password1.errors.0 }}
+            </div>
+            {% elif form.password1.help_text %}
             <small style="color: #666; font-size: 0.85rem;">{{ form.password1.help_text }}</small>
             {% endif %}
         </div>
@@ -73,8 +85,12 @@
                    name="{{ form.password2.name }}" 
                    id="{{ form.password2.id_for_label }}"
                    required
-                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
-            {% if form.password2.help_text %}
+                   style="width: 100%; padding: 0.75rem; border: 1px solid {% if form.password2.errors %}#c33{% else %}#ddd{% endif %}; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.password2.errors %}
+            <div style="color: #c33; font-size: 0.85rem; margin-top: 0.25rem;">
+                {{ form.password2.errors.0 }}
+            </div>
+            {% elif form.password2.help_text %}
             <small style="color: #666; font-size: 0.85rem;">{{ form.password2.help_text }}</small>
             {% endif %}
         </div>

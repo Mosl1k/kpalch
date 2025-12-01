@@ -53,10 +53,17 @@ def register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # Автоматически логиним пользователя после регистрации
-            login(request, user)
-            return redirect('index')
+            try:
+                user = form.save()
+                # Автоматически логиним пользователя после регистрации
+                login(request, user)
+                return redirect('index')
+            except Exception as e:
+                # Логируем ошибку и показываем пользователю
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error during user registration: {str(e)}", exc_info=True)
+                form.add_error(None, f"Ошибка при регистрации: {str(e)}")
     else:
         form = UserRegistrationForm()
     
