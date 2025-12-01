@@ -81,11 +81,10 @@ class UserProfileMiddleware:
                         user=request.user,
                         yandex_id=unique_id
                     )
-                except Exception as e:
-                    # Логируем ошибку, но не блокируем запрос
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error creating UserProfile for user {request.user.username}: {str(e)}")
+                except Exception:
+                    # Игнорируем ошибки создания профиля, чтобы не блокировать запрос
+                    # Профиль будет создан при следующем запросе или через view
+                    pass
         
         response = self.get_response(request)
         return response
