@@ -149,7 +149,7 @@ def delete_category(request, category_name):
     category.delete()
     
     return Response({
-        'message': f'Category deleted. {items_count} items removed.'
+        'message': f'Category deleted. {items_count} item{"s" if items_count != 1 else ""} removed.'
     }, status=200)
 
 
