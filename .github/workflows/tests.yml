@@ -49,9 +49,10 @@ jobs:
         SECRET_KEY: test-secret-key-for-ci-min-32-chars
         DEBUG: True
         DJANGO_SETTINGS_MODULE: gestalt.settings
+        PYTHONPATH: ${{ github.workspace }}/backend
       run: |
-        cd backend/gestalt
-        python manage.py migrate
+        cd backend
+        python gestalt/manage.py migrate
     
     - name: Run tests
       env:
@@ -64,6 +65,7 @@ jobs:
         SECRET_KEY: test-secret-key-for-ci-min-32-chars
         DEBUG: True
         DJANGO_SETTINGS_MODULE: gestalt.settings
+        PYTHONPATH: ${{ github.workspace }}/backend
       run: |
         cd backend
         python -m pytest shopping_list/tests.py --cov=shopping_list --cov-report=xml -v
