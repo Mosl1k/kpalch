@@ -123,7 +123,8 @@
             <input type="text" 
                    id="itemName" 
                    placeholder="Название элемента"
-                       onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') toggleAddForm();">
+                   autofocus
+                   onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') toggleAddForm();">
             <select id="itemCategory">
                 {% for category in categories %}
                 <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
@@ -1164,13 +1165,24 @@
         
         if (isHidden) {
             addForm.style.display = 'block';
-            // Фокусируемся на поле ввода и выделяем текст (если есть)
+            // Прокручиваем к форме для мобильных устройств
+            addForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // Фокусируемся на поле ввода сразу и выделяем текст (если есть)
             const nameInput = document.getElementById('itemName');
             if (nameInput) {
-                setTimeout(() => {
-                    nameInput.focus();
-                    nameInput.select();
-                }, 100);
+                // Используем requestAnimationFrame для гарантированного фокуса после отображения
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        nameInput.focus();
+                        nameInput.select();
+                        // Дополнительная попытка фокуса для мобильных устройств
+                        if (document.activeElement !== nameInput) {
+                            nameInput.click();
+                            nameInput.focus();
+                        }
+                    });
+                });
             }
         } else {
             addForm.style.display = 'none';
