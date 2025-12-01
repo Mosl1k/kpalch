@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gestalt_test
+          POSTGRES_USER: gestalt
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Run migrations
+      env:
+        DATABASE_URL: postgres://gestalt:test_password@localhost:5432/gestalt_test
+        POSTGRES_DB: gestalt_test
+        POSTGRES_USER: gestalt
+        POSTGRES_PASSWORD: test_password
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        SECRET_KEY: test-secret-key-for-ci-min-32-chars
+        DEBUG: True
+      run: |
+        cd backend/gestalt
+        python manage.py migrate
+    
+    - name: Run tests
+      env:
+        DATABASE_URL: postgres://gestalt:test_password@localhost:5432/gestalt_test
+        POSTGRES_DB: gestalt_test
+        POSTGRES_USER: gestalt
+        POSTGRES_PASSWORD: test_password
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        SECRET_KEY: test-secret-key-for-ci-min-32-chars
+        DEBUG: True
+      run: |
+        cd backend
+        pytest --cov=shopping_list --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        fail_ci_if_error: false
+
