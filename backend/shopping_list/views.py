@@ -60,11 +60,14 @@ def index(request):
             ).order_by('order', '-priority', 'name')
     
     # Передаем информацию о том, какие категории можно удалять
+    # Крестик удаления показывается только для нестандартных категорий, созданных пользователем
     categories_with_deletable = []
     for category in categories:
+        # Проверяем: категория не системная И (создана пользователем ИЛИ админ для старых категорий)
+        can_delete = category.can_be_deleted_by(request.user)
         categories_with_deletable.append({
             'category': category,
-            'can_delete': category.can_be_deleted_by(request.user)
+            'can_delete': can_delete
         })
     
     return render(request, 'shopping_list/index.html', {
