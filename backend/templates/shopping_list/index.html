@@ -116,13 +116,14 @@
             </div>
         </div>
         
-        <div class="add-form">
+        <!-- Форма добавления (скрыта по умолчанию) -->
+        <div class="add-form" id="addForm" style="display: none;">
             <h3>Добавить элемент</h3>
         <div class="form-group">
             <input type="text" 
                    id="itemName" 
                    placeholder="Название элемента"
-                   onkeypress="if(event.key === 'Enter') addItem()">
+                       onkeypress="if(event.key === 'Enter') addItem(); if(event.key === 'Escape') toggleAddForm();">
             <select id="itemCategory">
                 {% for category in categories %}
                 <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
@@ -136,13 +137,17 @@
                 <option value="3">Высокий приоритет</option>
             </select>
             <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+                <button class="btn btn-secondary" onclick="toggleAddForm()">Отмена</button>
         </div>
-    </div>
+        </div>
     
-    <!-- Кнопки навигации по категориям -->
+    <!-- Фиксированная панель навигации внизу -->
     <div class="nav-buttons">
-        <button class="btn btn-nav" onclick="navigateCategory('left')" title="Предыдущая категория">← Влево</button>
-        <button class="btn btn-nav" onclick="navigateCategory('right')" title="Следующая категория">Вправо →</button>
+        <button class="btn btn-nav" onclick="navigateCategory('left')" title="Предыдущая категория">←</button>
+        <button class="btn btn-add-item" onclick="toggleAddForm()" title="Добавить элемент">
+            <span class="plus-icon">+</span>
+        </button>
+        <button class="btn btn-nav" onclick="navigateCategory('right')" title="Следующая категория">→</button>
     </div>
 </div>
 {% endblock %}
@@ -156,18 +161,19 @@
         align-items: center;
         gap: 0.5rem;
         flex-wrap: wrap;
+        margin-bottom: 1rem;
     }
     .add-category-btn {
         width: auto;
-        min-width: 50px;
+        min-width: 40px;
         height: auto;
-        min-height: 50px;
-        padding: 0.75rem 1.5rem;
+        min-height: 40px;
+        padding: 0.5rem 1rem;
         border-radius: 5px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
         color: white;
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: bold;
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
@@ -178,6 +184,25 @@
         margin-right: 0.5rem;
         vertical-align: middle;
         line-height: 1;
+    }
+    
+    /* Кнопки категорий - уменьшаем для мобильных */
+    .category-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .category-link {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        .add-category-btn {
+            min-width: 35px;
+            min-height: 35px;
+            padding: 0.4rem 0.8rem;
+            font-size: 1.3rem;
+        }
     }
     .add-category-btn:hover {
         transform: scale(1.1);
@@ -313,6 +338,97 @@
     .item-actions .checkbox {
         order: 3; /* Чекбокс всегда справа */
     }
+    
+    /* Кнопки навигации по категориям - фиксированные внизу */
+    .nav-buttons {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: white;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .btn-nav {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s;
+        min-width: 60px;
+    }
+    
+    .btn-nav:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+    
+    .btn-add-item {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border: none;
+        font-size: 2rem;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    
+    .btn-add-item:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6);
+    }
+    
+    .btn-add-item .plus-icon {
+        display: block;
+    }
+    
+    /* Добавляем отступ снизу для контента, чтобы не перекрывался кнопками */
+    .container {
+        padding-bottom: 100px;
+    }
+    
+    @media (max-width: 768px) {
+        .nav-buttons {
+            padding: 0.75rem;
+            gap: 0.75rem;
+        }
+        
+        .btn-nav {
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            min-width: 50px;
+        }
+        
+        .btn-add-item {
+            width: 45px;
+            height: 45px;
+            font-size: 1.8rem;
+        }
+        
+        .container {
+            padding-bottom: 90px;
+        }
+    }
 </style>
 {% endblock extra_css %}
 
@@ -425,6 +541,7 @@
             
             if (response.ok) {
                 document.getElementById('itemName').value = '';
+                toggleAddForm(); // Скрываем форму после успешного добавления
                 window.location.reload();
             } else {
                 const data = await response.json();
@@ -1023,12 +1140,39 @@
         }
     }
     
+    // Функция для показа/скрытия формы добавления элемента
+    function toggleAddForm() {
+        const addForm = document.getElementById('addForm');
+        if (addForm) {
+            if (addForm.style.display === 'none' || addForm.style.display === '') {
+                addForm.style.display = 'block';
+                // Фокусируемся на поле ввода
+                const nameInput = document.getElementById('itemName');
+                if (nameInput) {
+                    setTimeout(() => nameInput.focus(), 100);
+                }
+            } else {
+                addForm.style.display = 'none';
+                // Очищаем форму
+                const nameInput = document.getElementById('itemName');
+                if (nameInput) nameInput.value = '';
+            }
+        }
+    }
+    
     // Закрываем форму добавления категории при клике вне её
     document.addEventListener('click', function(event) {
         const categoryNav = document.querySelector('.category-nav');
         const addCategoryForm = document.getElementById('addCategoryForm');
         if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
             addCategoryForm.style.display = 'none';
+        }
+        
+        // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
+        const addForm = document.getElementById('addForm');
+        const navButtons = document.querySelector('.nav-buttons');
+        if (addForm && navButtons && !navButtons.contains(event.target) && !addForm.contains(event.target)) {
+            addForm.style.display = 'none';
         }
     });
     
