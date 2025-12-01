@@ -55,6 +55,9 @@ def register(request):
         if form.is_valid():
             try:
                 user = form.save()
+                # Создаем профиль пользователя, если его нет
+                from .models import UserProfile
+                UserProfile.objects.get_or_create(user=user)
                 # Автоматически логиним пользователя после регистрации
                 login(request, user)
                 return redirect('index')
