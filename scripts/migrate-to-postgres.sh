@@ -149,7 +149,8 @@ docker-compose exec -T geshtalt python manage.py migrate --noinput
 info "Миграция данных из Redis в PostgreSQL..."
 
 # Получаем SERVICE_USER_IDS из .env или используем дефолтные
-SERVICE_USER_IDS="77415476,1179386959"
+# SERVICE_USER_IDS должны быть указаны в .env файле
+SERVICE_USER_IDS=""
 if [ -f "$PROJECT_DIR/.env" ]; then
     if grep -q "SERVICE_USER_IDS" "$PROJECT_DIR/.env"; then
         SERVICE_USER_IDS=$(grep "SERVICE_USER_IDS" "$PROJECT_DIR/.env" | cut -d '=' -f2 | tr -d '"' | tr -d "'")

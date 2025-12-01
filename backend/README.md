@@ -46,7 +46,7 @@ backend_django/
 python manage.py migrate_from_redis \
     --redis-host=redis \
     --redis-password="s!mpleRed1sP@$" \
-    --service-user-ids="77415476,1179386959"
+    --service-user-ids="user1,user2"
 ```
 
 ## Переменные окружения

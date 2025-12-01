@@ -86,7 +86,7 @@ class Command(BaseCommand):
                         user_id_str = service_user_ids[0].strip()
                         self.stdout.write(f'  Формат: старый, используется пользователь {user_id_str} для категории {category_name}')
                     else:
-                        user_id_str = '77415476'  # Дефолтный пользователь
+                        user_id_str = 'service_user'  # Дефолтный пользователь
                         self.stdout.write(self.style.WARNING(f'  Формат: старый, используется дефолтный пользователь {user_id_str} для категории {category_name}'))
                 else:
                     self.stdout.write(self.style.WARNING(f'  Неизвестный формат ключа: {key_str} (частей: {len(parts)}), пропускаем'))
