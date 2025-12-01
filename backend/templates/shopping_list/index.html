@@ -138,6 +138,12 @@
             <button class="btn btn-primary" onclick="addItem()">Добавить</button>
         </div>
     </div>
+    
+    <!-- Кнопки навигации по категориям -->
+    <div class="nav-buttons">
+        <button class="btn btn-nav" onclick="navigateCategory('left')" title="Предыдущая категория">← Влево</button>
+        <button class="btn btn-nav" onclick="navigateCategory('right')" title="Следующая категория">Вправо →</button>
+    </div>
 </div>
 {% endblock %}
 
@@ -318,6 +324,15 @@
     // Переменные для редактирования
     let currentEditItem = null;
     let originalItemData = {};
+    
+    // Переменные для навигации по категориям
+    const allCategories = [
+        {% for category in categories %}
+        '{{ category.name }}',
+        {% endfor %}
+    ];
+    let currentCategoryIndex = allCategories.indexOf(currentCategory);
+    if (currentCategoryIndex === -1) currentCategoryIndex = 0;
     
     // Функция для добавления кнопок перемещения
     function addMoveButtons(itemElement) {
@@ -1014,6 +1029,37 @@
         const addCategoryForm = document.getElementById('addCategoryForm');
         if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
             addCategoryForm.style.display = 'none';
+        }
+    });
+    
+    // Функция навигации по категориям
+    function navigateCategory(direction) {
+        if (allCategories.length === 0) return;
+        
+        if (direction === 'left') {
+            currentCategoryIndex = currentCategoryIndex > 0 ? currentCategoryIndex - 1 : allCategories.length - 1;
+        } else {
+            currentCategoryIndex = currentCategoryIndex < allCategories.length - 1 ? currentCategoryIndex + 1 : 0;
+        }
+        
+        const newCategory = allCategories[currentCategoryIndex];
+        if (newCategory) {
+            // Сохраняем в localStorage
+            localStorage.setItem('lastCategory', newCategory);
+            
+            // Переходим на новую категорию
+            window.location.href = `/?category=${encodeURIComponent(newCategory)}`;
+        }
+    }
+    
+    // Восстанавливаем категорию из localStorage при загрузке (если не указана в URL)
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('category')) {
+            const savedCategory = localStorage.getItem('lastCategory');
+            if (savedCategory && allCategories.includes(savedCategory)) {
+                window.location.href = `/?category=${encodeURIComponent(savedCategory)}`;
+            }
         }
     });
 </script>
