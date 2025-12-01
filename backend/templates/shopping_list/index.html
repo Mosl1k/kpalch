@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+
+{% block title %}Список покупок - Незабудки{% endblock title %}
+
+{% block content %}{% load static %}
+    <div class="container">
+    <nav class="category-nav">
+        <!-- Плюсик для добавления нового списка -->
+        <button class="add-category-btn" onclick="toggleAddCategory()" title="Добавить новый список">
+            <span class="plus-icon">+</span>
+        </button>
+        <div class="add-category-form" id="addCategoryForm" style="display: none;">
+            <input type="text" 
+                   id="newCategoryName" 
+                   placeholder="Название списка"
+                   onkeypress="if(event.key === 'Enter') addNewCategory()">
+            <button class="btn btn-primary" onclick="addNewCategory()">Создать</button>
+        </div>
+        {% for item in categories_with_deletable %}
+        <div class="category-item-wrapper">
+            <a href="/?category={{ item.category.name }}" 
+               class="category-link {% if current_category == item.category.name %}active{% endif %}">
+                {{ item.category.display_name }}
+            </a>
+            {% if item.can_delete %}
+            <button class="delete-category-btn" 
+                    onclick="deleteCategory('{{ item.category.name|escapejs }}', '{{ item.category.display_name|escapejs }}')" 
+                    title="Удалить список">
+                ×
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </nav>
+
+    <div id="shoppingListContainer">
+        {% if items %}
+        <ul class="shopping-list" id="shoppingList">
+            {% for item in items %}
+            <li class="shopping-item priority-{% if item.priority == 3 %}high{% elif item.priority == 2 %}medium{% else %}low{% endif %} {% if item.bought %}bought{% endif %}" 
+                data-name="{{ item.name }}" 
+                data-category="{{ item.category.name }}">
+                <div class="item-name">
+                    <span class="priority-icon">
+                        {% if item.priority == 3 %}🔥
+                        {% elif item.priority == 2 %}🟡
+                        {% else %}🟢
+                        {% endif %}
+                    </span>
+                    <span>{{ item.name }}</span>
+                </div>
+                <div class="item-actions">
+                    <input type="checkbox" 
+                           class="checkbox item-checkbox" 
+                           {% if item.bought %}checked{% endif %}
+                           onchange="handleCheckboxChange('{{ item.name|escapejs }}', this);"
+                           data-item-name="{{ item.name }}">
+                    <button class="btn btn-small btn-danger delete-btn" 
+                            onclick="deleteItem('{{ item.name|escapejs }}')"
+                            style="display: {% if item.bought %}inline-block{% else %}none{% endif %};">
+                        Удалить
+                    </button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <p>Список пуст. Добавьте первый элемент!</p>
+        </div>
+        {% endif %}
+        </div>
+        
+    <!-- Кнопка "Удалить все" для выделенных элементов -->
+    <div class="bulk-delete-container" id="bulkDeleteContainer" style="display: none;">
+        <div class="bulk-delete-info">
+            <span id="selectedCount">0</span> элементов выбрано
+        </div>
+        <button class="btn btn-danger bulk-delete-btn" onclick="deleteSelectedItems()">
+            Удалить все
+        </button>
+    </div>
+        
+        <div class="add-form">
+            <h3>Добавить элемент</h3>
+        <div class="form-group">
+            <input type="text" 
+                   id="itemName" 
+                   placeholder="Название элемента"
+                   onkeypress="if(event.key === 'Enter') addItem()">
+            <select id="itemCategory">
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if current_category == category.name %}selected{% endif %}>
+                    {{ category.display_name }}
+                </option>
+                {% endfor %}
+            </select>
+            <select id="itemPriority">
+                <option value="1">Низкий приоритет</option>
+                <option value="2" selected>Средний приоритет</option>
+                <option value="3">Высокий приоритет</option>
+            </select>
+            <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Плюсик для добавления нового списка в навигации */
+    .category-nav {
+        position: relative;
+    }
+    .add-category-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-size: 1.8rem;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+    .add-category-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+    .add-category-form {
+        position: absolute;
+        top: 60px;
+        left: 0;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        z-index: 10;
+        min-width: 300px;
+    }
+    .add-category-form input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+    /* Кнопка удаления категории */
+    .delete-category-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ff4444;
+        color: white;
+        border: 2px solid white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+        z-index: 5;
+    }
+    .delete-category-btn:hover {
+        background: #cc0000;
+        transform: scale(1.2);
+    }
+    
+    /* Кнопка "Удалить все" */
+    .bulk-delete-container {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        z-index: 1000;
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+    .bulk-delete-info {
+        font-weight: 500;
+        color: #333;
+    }
+    .bulk-delete-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block extra_js %}
+{% csrf_token %}
+    <script>
+    const currentCategory = '{% if current_category %}{{ current_category }}{% else %}купить{% endif %}';
+    
+    function getCSRFToken() {
+        // Сначала пытаемся получить из скрытого input
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+        // Если нет, пытаемся получить из cookie
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
+            }
+        }
+        return '';
+    }
+    
+    async function addItem() {
+        const name = document.getElementById('itemName').value.trim();
+        const category = document.getElementById('itemCategory').value;
+        const priority = parseInt(document.getElementById('itemPriority').value);
+        
+        if (!name) {
+            alert('Введите название элемента');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'include',
+                body: JSON.stringify({name, category, priority})
+            });
+            
+            if (response.ok) {
+                document.getElementById('itemName').value = '';
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при добавлении элемента');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при добавлении элемента');
+        }
+    }
+    
+    // Обработчик изменения чекбокса
+    function handleCheckboxChange(name, checkbox) {
+        const bought = checkbox.checked;
+        // Сразу обновляем счетчик при изменении чекбокса
+        updateSelectionCount();
+        toggleBought(name, bought, checkbox);
+    }
+    
+    async function toggleBought(name, bought, checkbox) {
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            console.error('CSRF token not found');
+            return;
+        }
+        
+        // Показываем/скрываем кнопку удалить сразу для лучшего UX
+        const itemElement = checkbox.closest('.shopping-item');
+        const deleteBtn = itemElement.querySelector('.delete-btn');
+        if (bought) {
+            deleteBtn.style.display = 'inline-block';
+            itemElement.classList.add('bought');
+        } else {
+            deleteBtn.style.display = 'none';
+            itemElement.classList.remove('bought');
+        }
+        
+        try {
+            const response = await fetch(`/api/buy/${encodeURIComponent(name)}?category=${encodeURIComponent(currentCategory)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include',
+                body: JSON.stringify({bought})
+            });
+            
+            if (response.ok) {
+                // Не перезагружаем страницу, просто обновляем состояние
+                // Обновляем счетчик после успешного ответа
+                setTimeout(function() {
+                    updateSelectionCount();
+                }, 50);
+            } else {
+                // Откатываем изменения при ошибке
+                checkbox.checked = !bought;
+                if (bought) {
+                    deleteBtn.style.display = 'none';
+                    itemElement.classList.remove('bought');
+                } else {
+                    deleteBtn.style.display = 'inline-block';
+                    itemElement.classList.add('bought');
+                }
+                const errorText = await response.text();
+                console.error('Error response:', response.status, errorText);
+                alert('Ошибка при обновлении элемента: ' + response.status);
+            }
+        } catch (error) {
+            // Откатываем изменения при ошибке
+            checkbox.checked = !bought;
+            if (bought) {
+                deleteBtn.style.display = 'none';
+                itemElement.classList.remove('bought');
+            } else {
+                deleteBtn.style.display = 'inline-block';
+                itemElement.classList.add('bought');
+            }
+            console.error('Error:', error);
+            alert('Ошибка при обновлении элемента: ' + error.message);
+        }
+    }
+    
+    async function deleteItem(name) {
+        if (!confirm(`Удалить элемент "${name}"?`)) {
+            return;
+        }
+        
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            console.error('CSRF token not found');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/delete/${encodeURIComponent(name)}?category=${encodeURIComponent(currentCategory)}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', response.status, errorText);
+                alert('Ошибка при удалении элемента: ' + response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при удалении элемента: ' + error.message);
+        }
+    }
+    
+    // Функции для добавления нового списка (категории)
+    function toggleAddCategory() {
+        const form = document.getElementById('addCategoryForm');
+        if (form.style.display === 'none') {
+            form.style.display = 'flex';
+            document.getElementById('newCategoryName').focus();
+        } else {
+            form.style.display = 'none';
+        }
+    }
+    
+    async function addNewCategory() {
+        const name = document.getElementById('newCategoryName').value.trim();
+        
+        if (!name) {
+            alert('Введите название списка');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/category/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'include',
+                body: JSON.stringify({name: name.toLowerCase(), display_name: name})
+            });
+            
+            if (response.ok) {
+                document.getElementById('newCategoryName').value = '';
+                document.getElementById('addCategoryForm').style.display = 'none';
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при создании списка');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при создании списка');
+        }
+    }
+    
+    async function deleteCategory(categoryName, categoryDisplayName) {
+        if (!confirm(`Удалить список "${categoryDisplayName}"?\n\nВсе элементы этого списка будут также удалены.`)) {
+            return;
+        }
+        
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/category/delete/${encodeURIComponent(categoryName)}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                alert(data.message || 'Список удален');
+                // Если удаляли текущую категорию, переходим на главную
+                if (currentCategory === categoryName) {
+                    window.location.href = '/';
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при удалении списка');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при удалении списка: ' + error.message);
+        }
+    }
+    
+    // Глобальная переменная для хранения выбранных элементов
+    let selectedItemsList = [];
+    
+    // Функции для массового удаления (используем чекбоксы "куплено")
+    function updateSelectionCount() {
+        try {
+            // Ищем все чекбоксы с классом checkbox
+            const allCheckboxes = document.querySelectorAll('input.checkbox[type="checkbox"]');
+            const checkedCheckboxes = document.querySelectorAll('input.checkbox[type="checkbox"]:checked');
+            
+            console.log('[updateSelectionCount] All checkboxes:', allCheckboxes.length);
+            console.log('[updateSelectionCount] Checked checkboxes:', checkedCheckboxes.length);
+            
+            selectedItemsList = [];
+            
+            checkedCheckboxes.forEach(cb => {
+                const itemElement = cb.closest('.shopping-item');
+                if (itemElement) {
+                    const itemName = itemElement.getAttribute('data-item-name');
+                    if (itemName) {
+                        selectedItemsList.push(itemName);
+                        console.log('[updateSelectionCount] Found item:', itemName);
+                    } else {
+                        // Пробуем получить из data-item-name чекбокса
+                        const checkboxItemName = cb.getAttribute('data-item-name');
+                        if (checkboxItemName) {
+                            selectedItemsList.push(checkboxItemName);
+                            console.log('[updateSelectionCount] Found item from checkbox:', checkboxItemName);
+                        } else {
+                            console.warn('[updateSelectionCount] Item element found but no data-item-name');
+                        }
+                    }
+                } else {
+                    console.warn('[updateSelectionCount] Checkbox found but no shopping-item parent');
+                }
+            });
+            
+            const count = selectedItemsList.length;
+            const container = document.getElementById('bulkDeleteContainer');
+            const countSpan = document.getElementById('selectedCount');
+            
+            console.log('[updateSelectionCount] Count:', count, 'items:', selectedItemsList);
+            console.log('[updateSelectionCount] Container found:', container !== null);
+            
+            if (!container) {
+                console.error('[updateSelectionCount] bulkDeleteContainer not found!');
+                return;
+            }
+            
+            if (!countSpan) {
+                console.error('[updateSelectionCount] selectedCount span not found!');
+                return;
+            }
+            
+            if (count >= 2) {
+                container.style.display = 'flex';
+                countSpan.textContent = count;
+                console.log('[updateSelectionCount] ✓ Showing bulk delete container with', count, 'items');
+            } else {
+                container.style.display = 'none';
+                console.log('[updateSelectionCount] Hiding bulk delete container (count:', count, ')');
+            }
+        } catch (error) {
+            console.error('[updateSelectionCount] Error:', error);
+        }
+    }
+    
+    async function deleteSelectedItems() {
+        // Используем сохраненный список выбранных элементов
+        const selectedItems = [...selectedItemsList];
+        
+        console.log('Delete selected items:', selectedItems);
+        console.log('Selected count:', selectedItems.length);
+        
+        if (selectedItems.length < 2) {
+            alert(`Выберите минимум 2 купленных элемента для удаления. Сейчас выбрано: ${selectedItems.length}`);
+            // Обновляем счетчик на случай, если что-то изменилось
+            updateSelectionCount();
+            return;
+        }
+        
+        if (!confirm(`Удалить ${selectedItems.length} выбранных элементов?`)) {
+            return;
+        }
+        
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        // Удаляем все выбранные элементы
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+        
+        for (const itemName of selectedItems) {
+            try {
+                const response = await fetch(`/api/delete/${encodeURIComponent(itemName)}?category=${encodeURIComponent(currentCategory)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    const errorText = await response.text();
+                    errors.push(`${itemName}: ${response.status} ${errorText}`);
+                    console.error(`Error deleting ${itemName}:`, response.status, errorText);
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push(`${itemName}: ${error.message}`);
+                console.error('Error deleting item:', itemName, error);
+            }
+        }
+        
+        if (successCount > 0) {
+            if (errorCount > 0) {
+                alert(`Удалено ${successCount} элементов. Ошибок: ${errorCount}\n${errors.join('\n')}`);
+            }
+            // Очищаем список перед перезагрузкой
+            selectedItemsList = [];
+            window.location.reload();
+        } else {
+            alert(`Ошибка при удалении элементов:\n${errors.join('\n')}`);
+        }
+    }
+    
+    // Обновляем счетчик при изменении чекбоксов "куплено"
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация счетчика после загрузки страницы
+        setTimeout(function() {
+            updateSelectionCount();
+        }, 100);
+        
+        // Также обновляем при любых изменениях DOM
+        const observer = new MutationObserver(function(mutations) {
+            updateSelectionCount();
+        });
+        
+        const shoppingList = document.getElementById('shoppingList');
+        if (shoppingList) {
+            observer.observe(shoppingList, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        }
+        
+        // Также обновляем при клике на любой чекбокс (на случай, если onchange не сработал)
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('checkbox')) {
+                setTimeout(function() {
+                    updateSelectionCount();
+                }, 50);
+            }
+        });
+    });
+    
+    // Закрываем форму добавления категории при клике вне её
+    document.addEventListener('click', function(event) {
+        const categoryNav = document.querySelector('.category-nav');
+        const addCategoryForm = document.getElementById('addCategoryForm');
+        if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
+            addCategoryForm.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

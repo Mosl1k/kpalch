@@ -1,7 +1,65 @@
-__pycache__
-*.pyc
-db.sqlite3.env
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
 db.sqlite3
-sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
-data
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Data and backups
+data/backup/
+data/db/
+
+# PostgreSQL
+*.sql
+*.dump
+
+# Python virtual environments (keep env/ for now, but ignore binaries)
+env/bin/
+env/lib/
+env/lib64/
+env/include/
+env/pyvenv.cfg
+old/env/bin/
+old/env/lib/
+old/env/lib64/

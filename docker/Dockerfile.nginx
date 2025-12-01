@@ -1,0 +1,33 @@
+FROM nginx:alpine
+
+# Устанавливаем certbot и dig
+RUN apk add --no-cache certbot certbot-nginx bind-tools curl
+
+# Копируем конфигурацию nginx
+COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Создаём директорию для certbot
+RUN mkdir -p /etc/letsencrypt
+
+# Скрипт для получения сертификата при первом запуске
+RUN echo '#!/bin/sh' > /usr/local/bin/init-cert.sh && \
+    echo 'if [ -z "$DOMAIN" ]; then' >> /usr/local/bin/init-cert.sh && \
+    echo '  DOMAIN=$(dig +short -x $(curl -s https://api.ipify.org) | sed "s/\\.$//" || echo "")' >> /usr/local/bin/init-cert.sh && \
+    echo 'fi' >> /usr/local/bin/init-cert.sh && \
+    echo 'if [ -n "$DOMAIN" ] && [ ! -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then' >> /usr/local/bin/init-cert.sh && \
+    echo '  certbot certonly --standalone -d ${DOMAIN} --non-interactive --agree-tos --email ${CERTBOT_EMAIL:-admin@${DOMAIN}} || true' >> /usr/local/bin/init-cert.sh && \
+    echo 'fi' >> /usr/local/bin/init-cert.sh && \
+    chmod +x /usr/local/bin/init-cert.sh
+
+# Скрипт для обновления сертификата
+RUN echo '#!/bin/sh' > /usr/local/bin/renew-cert.sh && \
+    echo 'certbot renew --quiet' >> /usr/local/bin/renew-cert.sh && \
+    echo 'nginx -s reload' >> /usr/local/bin/renew-cert.sh && \
+    chmod +x /usr/local/bin/renew-cert.sh
+
+# Открываем порты
+EXPOSE 80 443
+
+# Запускаем nginx
+CMD ["/bin/sh", "-c", "/usr/local/bin/init-cert.sh && nginx -g 'daemon off;'"]
+

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Незабудки - Список покупок{% endblock title %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #FFCC00;
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #FFD700;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .main-content {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .category-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .category-link {
+            padding: 0.75rem 1.5rem;
+            background: #f0f0f0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .category-link:hover {
+            background: #e0e0e0;
+        }
+        .category-link.active {
+            background: #667eea;
+            color: white;
+        }
+        .shopping-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+        .shopping-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #ddd;
+            transition: all 0.2s;
+        }
+        .shopping-item:hover {
+            background: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .shopping-item.bought {
+            opacity: 0.6;
+        }
+        .shopping-item.bought .item-name {
+            text-decoration: line-through;
+        }
+        .shopping-item.bought .item-actions {
+            text-decoration: none;
+        }
+        .shopping-item.priority-high {
+            border-left-color: #ff4444;
+        }
+        .shopping-item.priority-medium {
+            border-left-color: #ffaa00;
+        }
+        .shopping-item.priority-low {
+            border-left-color: #44ff44;
+        }
+        .item-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        .btn-danger {
+            background: #ff4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #cc0000;
+        }
+        .add-form {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .form-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        .form-group input {
+            flex: 1;
+            min-width: 200px;
+        }
+        .form-group select {
+            min-width: 150px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .user-menu-dropdown {
+            position: relative;
+        }
+        .user-info {
+            cursor: pointer;
+            position: relative;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 1000;
+            padding: 0.5rem 0;
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+        .dropdown-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 0.5rem 0;
+        }
+    </style>
+    {% block extra_css %}{% endblock extra_css %}
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">🛒 Незабудки</a>
+            {% if user.is_authenticated %}
+            <div class="user-menu">
+                <div class="user-menu-dropdown">
+                    <div class="user-info" onclick="toggleUserMenu()">
+                        {% if user.profile.avatar_url %}
+                        <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar">
+                        {% else %}
+                        <div class="avatar">{{ user.username.0|upper }}</div>
+                        {% endif %}
+                        <span>{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</span>
+                        <span style="margin-left: 0.5rem;">▼</span>
+                    </div>
+                    <div class="dropdown-menu" id="userDropdownMenu">
+                        <div class="dropdown-item" style="font-weight: 500; color: #666;">
+                            {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+                        </div>
+                        {% if user.email %}
+                        <div class="dropdown-item" style="font-size: 0.85rem; color: #999;">
+                            {{ user.email }}
+                        </div>
+                        {% endif %}
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'friends' %}" class="dropdown-item">Друзья</a>
+                        <div class="dropdown-divider"></div>
+                        <form method="post" action="/logout" style="margin: 0; display: block;">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item" style="color: #d32f2f; border: none; background: none; width: 100%; text-align: left; cursor: pointer; padding: 0.75rem 1rem; font-size: inherit; font-family: inherit;">Выйти из аккаунта</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <a href="/auth/yandex" class="btn btn-primary">Войти</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock content %}
+    </main>
+
+    {% block extra_js %}{% endblock extra_js %}
+    <script>
+        function toggleUserMenu() {
+            const menu = document.getElementById('userDropdownMenu');
+            menu.classList.toggle('show');
+        }
+        
+        // Закрываем меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.user-menu-dropdown');
+            const menu = document.getElementById('userDropdownMenu');
+            if (dropdown && menu && !dropdown.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
+

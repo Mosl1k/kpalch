@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Иконка Незабудки - список покупок и напоминания">
+  <!-- Background circle (optional subtle) -->
+  <rect width="512" height="512" rx="64" fill="#F6FBFF"/>
+
+  <!-- Clipboard / paper -->
+  <g transform="translate(64,68)">
+    <!-- paper shadow -->
+    <rect x="8" y="24" width="320" height="376" rx="20" fill="#FFFFFF" filter="none" stroke="#E6EEF8" stroke-width="2"/>
+    <!-- clip header (binding) -->
+    <rect x="120" y="-12" width="80" height="36" rx="8" fill="#E6F2FF" />
+    <rect x="128" y="-8" width="64" height="28" rx="6" fill="#BEE1FF"/>
+    <!-- lines and checkboxes -->
+    <g transform="translate(32,40)">
+      <!-- line 1 -->
+      <rect x="56" y="12" width="220" height="18" rx="9" fill="#F1F6FB"/>
+      <rect x="0" y="8" width="36" height="36" rx="6" fill="#FFFFFF" stroke="#D6E8FF" stroke-width="2"/>
+      <path d="M8 28 L14 34 L28 14" fill="none" stroke="#3AA0FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- line 2 -->
+      <rect x="56" y="72" width="220" height="18" rx="9" fill="#F1F6FB"/>
+      <rect x="0" y="68" width="36" height="36" rx="6" fill="#FFFFFF" stroke="#D6E8FF" stroke-width="2"/>
+      <!-- unchecked box small -->
+      <path d="M12 84 L18 90" fill="none" stroke="#B0CFF9" stroke-width="3" stroke-linecap="round"/>
+      <!-- line 3 -->
+      <rect x="56" y="132" width="220" height="18" rx="9" fill="#F1F6FB"/>
+      <rect x="0" y="128" width="36" height="36" rx="6" fill="#FFFFFF" stroke="#D6E8FF" stroke-width="2"/>
+      <path d="M8 146 L14 152 L28 132" fill="none" stroke="#3AA0FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- small decorative lines (to suggest text) -->
+    <g transform="translate(32,220)">
+      <rect x="56" y="0" width="220" height="10" rx="5" fill="#EEF6FF"/>
+      <rect x="56" y="18" width="180" height="10" rx="5" fill="#EEF6FF"/>
+    </g>
+
+    <!-- Forget-me-not flower (незабудка) in top-right corner overlapping paper -->
+    <g transform="translate(260, -10) scale(1)">
+      <!-- center -->
+      <circle cx="36" cy="36" r="8" fill="#FFD966" stroke="#F6C94D" stroke-width="1"/>
+      <!-- petals (5) -->
+      <path d="M36 4 C48 6 62 18 56 30 C50 42 40 44 36 36 C32 44 22 42 16 30 C10 18 24 6 36 4 Z" fill="#79C0FF" stroke="#4DA0FF" stroke-width="1"/>
+      <!-- subtle second petal layer for stylized look -->
+      <path d="M36 12 C46 14 56 24 52 34 C48 44 40 42 36 34 C32 42 24 44 20 34 C16 24 26 14 36 12 Z" fill="#61AFFF" opacity="0.9"/>
+      <!-- little leaf -->
+      <path d="M66 46 C74 42 86 46 84 56 C82 66 72 72 66 66 C60 60 60 54 66 46 Z" fill="#A8E6A1" stroke="#7ED17E" stroke-width="1"/>
+    </g>
+  </g>
+
+  <!-- optional small drop shadow under the paper -->
+  <ellipse cx="280" cy="430" rx="120" ry="18" fill="#EAF4FF" opacity="0.6"/>
+</svg>
