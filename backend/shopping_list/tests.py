@@ -3,6 +3,7 @@
 """
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from .models import Category, ShoppingItem, Friendship, SharedList, UserProfile
@@ -31,7 +32,7 @@ class ShoppingListAPITestCase(TestCase):
     
     def test_list_items_empty(self):
         """Тест получения пустого списка"""
-        response = self.client.get('/api/list?category=купить')
+        response = self.client.get('/api/list', {'category': 'купить'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
     
@@ -41,7 +42,7 @@ class ShoppingListAPITestCase(TestCase):
             'name': 'Молоко',
             'category': 'купить',
             'priority': 2
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ShoppingItem.objects.count(), 1)
         self.assertEqual(ShoppingItem.objects.first().name, 'Молоко')
@@ -54,9 +55,10 @@ class ShoppingListAPITestCase(TestCase):
             category=self.category,
             priority=2
         )
-        response = self.client.put(f'/api/buy/{item.name}?category=купить', {
-            'bought': True
-        })
+        response = self.client.put(f'/api/buy/{item.name}', {
+            'bought': True,
+            'category': 'купить'
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item.refresh_from_db()
         self.assertTrue(item.bought)
@@ -69,7 +71,7 @@ class ShoppingListAPITestCase(TestCase):
             category=self.category,
             priority=2
         )
-        response = self.client.delete(f'/api/delete/{item.name}?category=купить')
+        response = self.client.delete(f'/api/delete/{item.name}', {'category': 'купить'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ShoppingItem.objects.count(), 0)
     
@@ -78,7 +80,7 @@ class ShoppingListAPITestCase(TestCase):
         response = self.client.post('/api/category/add', {
             'name': 'работа',
             'display_name': 'Работа'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Category.objects.filter(name='работа').exists())
 
@@ -108,7 +110,7 @@ class FriendsAPITestCase(TestCase):
         """Тест отправки запроса на дружбу"""
         response = self.client.post('/api/friend-request', {
             'user_id': self.user2.id
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Friendship.objects.filter(
             from_user=self.user1,
@@ -123,7 +125,7 @@ class FriendsAPITestCase(TestCase):
             to_user=self.user1,
             status='pending'
         )
-        response = self.client.post(f'/api/friend-request/{friendship.id}/accept')
+        response = self.client.post(f'/api/friend-request/{friendship.id}/accept', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         friendship.refresh_from_db()
         self.assertEqual(friendship.status, 'accepted')
@@ -187,7 +189,7 @@ class SharedListAPITestCase(TestCase):
             'user_id': self.user2.id,
             'category': 'купить',
             'message': 'Вот мой список'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(SharedList.objects.filter(
             from_user=self.user1,
@@ -206,7 +208,7 @@ class SharedListAPITestCase(TestCase):
         
         client2 = APIClient()
         client2.force_authenticate(user=self.user2)
-        response = client2.post(f'/api/shared-list/{shared_list.id}/accept')
+        response = client2.post(f'/api/shared-list/{shared_list.id}/accept', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         shared_list.refresh_from_db()
         self.assertEqual(shared_list.status, 'accepted')
@@ -255,7 +257,7 @@ class BulkDeleteTestCase(TestCase):
         
         # Удаляем все элементы по одному (как в фронтенде)
         for item in items:
-            response = self.client.delete(f'/api/delete/{item.name}?category=купить')
+            response = self.client.delete(f'/api/delete/{item.name}', {'category': 'купить'})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         self.assertEqual(ShoppingItem.objects.filter(user=self.user, category=self.category).count(), 0)
