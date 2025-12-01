@@ -795,11 +795,8 @@
             const direction = btn.classList.contains('move-up-btn') ? 'up' : 'down';
             console.log('[initMoveButtons] Adding handler for', itemName, direction);
             
-            // Удаляем старый обработчик, если есть
-            btn.replaceWith(btn.cloneNode(true));
-            const newBtn = document.querySelector(`[data-item-name="${itemName}"].${direction === 'up' ? 'move-up-btn' : 'move-down-btn'}`);
-            
-            newBtn.addEventListener('click', function(e) {
+            // Добавляем обработчик напрямую
+            btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 e.preventDefault();
                 console.log('[initMoveButtons] Button clicked:', itemName, direction);
