@@ -8,10 +8,13 @@ import logging
 import g4f  # Импортируем g4f для предложения блюд
 
 # Настройка логирования
+# В Docker логи должны идти в stdout/stderr для docker-compose logs
 logging.basicConfig(
-    filename='bot.log',
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # Вывод в stdout/stderr для Docker
+    ]
 )
 
 # Загружаем переменные из .env (только для локальной разработки)
@@ -556,26 +559,33 @@ async def show_list(update: Update, context, list_type):
 
 def main():
     """Запуск бота."""
+    logging.info("Запуск Telegram бота...")
+    logging.info(f"API_URL: {API_URL}")
+    logging.info(f"SERVICE_USER_ID: {SERVICE_USER_ID if SERVICE_USER_ID else 'не указан'}")
+    
     if not TELEGRAM_TOKEN:
         logging.error("Ошибка: TELEGRAM_TOKEN не указан в переменных окружения")
-        print("Ошибка: TELEGRAM_TOKEN не указан в переменных окружения")
         return
+    
     if not API_URL:
         logging.error("Ошибка: API_URL не указан в переменных окружения")
-        print("Ошибка: API_URL не указан в переменных окружения")
         return
+    
     if not SERVICE_USER_ID:
         logging.warning("Предупреждение: SERVICE_USER_ID не указан, будет использован дефолтный пользователь")
-        print("Предупреждение: SERVICE_USER_ID не указан, будет использован дефолтный пользователь")
 
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    try:
+        application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_text))
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CallbackQueryHandler(button_callback))
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_text))
 
-    print("Бот запущен...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+        logging.info("Бот запущен и готов к работе...")
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Exception as e:
+        logging.error(f"Критическая ошибка при запуске бота: {e}", exc_info=True)
+        raise
 
 if __name__ == "__main__":
     main()
