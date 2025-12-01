@@ -1160,12 +1160,39 @@
         }
     }
     
+    // Функция для показа/скрытия формы добавления элемента
+    function toggleAddForm() {
+        const addForm = document.getElementById('addForm');
+        if (addForm) {
+            if (addForm.style.display === 'none' || addForm.style.display === '') {
+                addForm.style.display = 'block';
+                // Фокусируемся на поле ввода
+                const nameInput = document.getElementById('itemName');
+                if (nameInput) {
+                    setTimeout(() => nameInput.focus(), 100);
+                }
+            } else {
+                addForm.style.display = 'none';
+                // Очищаем форму
+                const nameInput = document.getElementById('itemName');
+                if (nameInput) nameInput.value = '';
+            }
+        }
+    }
+    
     // Закрываем форму добавления категории при клике вне её
     document.addEventListener('click', function(event) {
         const categoryNav = document.querySelector('.category-nav');
         const addCategoryForm = document.getElementById('addCategoryForm');
         if (categoryNav && addCategoryForm && !categoryNav.contains(event.target)) {
             addCategoryForm.style.display = 'none';
+        }
+        
+        // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
+        const addForm = document.getElementById('addForm');
+        const navButtons = document.querySelector('.nav-buttons');
+        if (addForm && navButtons && !navButtons.contains(event.target) && !addForm.contains(event.target)) {
+            addForm.style.display = 'none';
         }
         
         // Закрываем форму добавления элемента при клике вне её (но не на кнопки навигации)
