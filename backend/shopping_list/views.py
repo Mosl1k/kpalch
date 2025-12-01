@@ -305,6 +305,26 @@ def reorder_items(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def get_current_user(request):
+    """Получить информацию о текущем пользователе"""
+    try:
+        profile = request.user.profile
+        return Response({
+            'id': str(request.user.id),
+            'name': request.user.get_full_name() or request.user.username,
+            'email': request.user.email,
+            'yandex_id': profile.yandex_id if profile else None,
+        })
+    except Exception as e:
+        return Response({
+            'id': str(request.user.id),
+            'name': request.user.get_full_name() or request.user.username,
+            'email': request.user.email,
+        })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def list_users(request):
     """Получить список всех пользователей, авторизованных через Yandex"""
     # Получаем только пользователей с Yandex профилем

@@ -19,7 +19,8 @@ class Category(models.Model):
     
     def is_system_category(self):
         """Проверяет, является ли категория системной (стандартной для всех)"""
-        SYSTEM_CATEGORIES = ['купить', 'дом', 'работа', 'другое', 'не-забыть', 'не забыть', 'холодос', 'холодильник', 'машина']
+        # Стандартные категории (5 штук)
+        SYSTEM_CATEGORIES = ['купить', 'не-забыть', 'дом', 'машина', 'холодос']
         return self.name in SYSTEM_CATEGORIES
     
     def can_be_deleted_by(self, user):

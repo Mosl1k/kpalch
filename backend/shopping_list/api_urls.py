@@ -11,6 +11,8 @@ urlpatterns = [
     path('delete/<str:name>', views.delete_item, name='delete'),
     path('edit/<str:name>', views.edit_item, name='edit'),
     path('reorder', views.reorder_items, name='reorder'),
+    # API для пользователя
+    path('user', views.get_current_user, name='get_current_user'),
     # API для друзей
     path('users', views.list_users, name='list_users'),
     path('friends', views.list_friends, name='list_friends'),
