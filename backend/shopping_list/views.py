@@ -56,16 +56,22 @@ def register(request):
             try:
                 user = form.save()
                 # Создаем профиль пользователя, если его нет
+                # yandex_id может быть None для обычной регистрации
                 from .models import UserProfile
-                UserProfile.objects.get_or_create(user=user)
+                profile, created = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={'yandex_id': None}
+                )
                 # Автоматически логиним пользователя после регистрации
                 login(request, user)
                 return redirect('index')
             except Exception as e:
                 # Логируем ошибку и показываем пользователю
                 import logging
+                import traceback
                 logger = logging.getLogger(__name__)
-                logger.error(f"Error during user registration: {str(e)}", exc_info=True)
+                error_trace = traceback.format_exc()
+                logger.error(f"Error during user registration: {str(e)}\n{error_trace}")
                 form.add_error(None, f"Ошибка при регистрации: {str(e)}")
     else:
         form = UserRegistrationForm()
