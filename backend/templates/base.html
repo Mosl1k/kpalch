@@ -275,7 +275,7 @@
             <div class="user-menu">
                 <div class="user-menu-dropdown">
                     <div class="user-info" onclick="toggleUserMenu()">
-                        {% if user.profile.avatar_url %}
+                        {% if user.profile and user.profile.avatar_url %}
                         <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar">
                         {% else %}
                         <div class="avatar">{{ user.username.0|upper }}</div>
