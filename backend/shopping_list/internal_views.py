@@ -55,17 +55,11 @@ def internal_list(request):
     
     # Формируем ответ в формате старого API
     result = []
-    user_ids = get_service_user_ids(request)
-    # Добавляем префикс с user_id, если пользователей несколько (как в Go версии)
-    add_prefix = len(user_ids) > 1
     
     for item in items:
-        item_name = item.name
-        if add_prefix:
-            item_name = f"[{item.user.username}] {item.name}"
-        
+        # Убираем префикс с логином - показываем только имя элемента
         result.append({
-            'name': item_name,
+            'name': item.name,
             'category': category.name,
             'bought': item.bought,
             'priority': item.priority,

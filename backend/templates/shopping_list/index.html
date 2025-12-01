@@ -261,7 +261,7 @@
     /* Кнопка "Удалить все" */
     .bulk-delete-container {
         position: fixed;
-        bottom: 100px; /* Выше кнопок навигации (которые на bottom: 0) */
+        top: 80px; /* Вверху страницы, ниже шапки */
         left: 50%;
         transform: translateX(-50%);
         background: white;
@@ -271,13 +271,13 @@
         display: flex;
         align-items: center;
         gap: 1.5rem;
-        z-index: 1002; /* Выше кнопок навигации (z-index: 1000) */
-        animation: slideUp 0.3s ease-out;
+        z-index: 1002; /* Выше контента */
+        animation: slideDown 0.3s ease-out;
     }
-    @keyframes slideUp {
+    @keyframes slideDown {
         from {
             opacity: 0;
-            transform: translateX(-50%) translateY(20px);
+            transform: translateX(-50%) translateY(-20px);
         }
         to {
             opacity: 1;
@@ -480,7 +480,7 @@
         }
         
         .bulk-delete-container {
-            bottom: 90px; /* Выше кнопок навигации на мобильных */
+            top: 70px; /* Вверху страницы на мобильных */
             padding: 0.75rem 1.5rem;
             font-size: 0.9rem;
         }
