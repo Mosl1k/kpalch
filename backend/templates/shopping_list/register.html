@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - Незабудки{% endblock title %}
+
+{% block content %}
+<div class="container" style="max-width: 400px; margin: 4rem auto; padding: 2rem;">
+    <h1 style="text-align: center; color: #333; margin-bottom: 2rem;">Регистрация</h1>
+    
+    {% if form.errors %}
+    <div class="alert alert-error" style="background: #fee; color: #c33; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+        <ul style="margin: 0; padding-left: 1.5rem;">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <form method="post" style="display: flex; flex-direction: column; gap: 1rem;">
+        {% csrf_token %}
+        
+        <div>
+            <label for="{{ form.username.id_for_label }}" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">
+                Имя пользователя:
+            </label>
+            <input type="text" 
+                   name="{{ form.username.name }}" 
+                   id="{{ form.username.id_for_label }}"
+                   value="{{ form.username.value|default:'' }}"
+                   required
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.username.help_text %}
+            <small style="color: #666; font-size: 0.85rem;">{{ form.username.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label for="{{ form.email.id_for_label }}" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">
+                Email:
+            </label>
+            <input type="email" 
+                   name="{{ form.email.name }}" 
+                   id="{{ form.email.id_for_label }}"
+                   value="{{ form.email.value|default:'' }}"
+                   required
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.email.help_text %}
+            <small style="color: #666; font-size: 0.85rem;">{{ form.email.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label for="{{ form.password1.id_for_label }}" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">
+                Пароль:
+            </label>
+            <input type="password" 
+                   name="{{ form.password1.name }}" 
+                   id="{{ form.password1.id_for_label }}"
+                   required
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.password1.help_text %}
+            <small style="color: #666; font-size: 0.85rem;">{{ form.password1.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label for="{{ form.password2.id_for_label }}" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">
+                Подтверждение пароля:
+            </label>
+            <input type="password" 
+                   name="{{ form.password2.name }}" 
+                   id="{{ form.password2.id_for_label }}"
+                   required
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+            {% if form.password2.help_text %}
+            <small style="color: #666; font-size: 0.85rem;">{{ form.password2.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-top: 0.5rem;">
+            Зарегистрироваться
+        </button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
+        <p style="color: #666; margin-bottom: 1rem;">Уже есть аккаунт?</p>
+        <a href="/login" class="btn" style="display: inline-block; padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 5px;">
+            Войти
+        </a>
+        <div style="margin-top: 1rem;">
+            <a href="/auth/yandex" style="color: #fc3f1d; text-decoration: none; font-size: 0.9rem;">
+                Войти через Yandex
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
