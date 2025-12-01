@@ -58,12 +58,12 @@
                            data-item-name="{{ item.name }}">
                     {% if item.bought %}
                     <button class="btn btn-small btn-move move-up-btn" 
-                            onclick="moveItem('{{ item.name|escapejs }}', 'up')"
+                            data-item-name="{{ item.name|escapejs }}"
                             title="Переместить вверх">
                         ↑
                     </button>
                     <button class="btn btn-small btn-move move-down-btn" 
-                            onclick="moveItem('{{ item.name|escapejs }}', 'down')"
+                            data-item-name="{{ item.name|escapejs }}"
                             title="Переместить вниз">
                         ↓
                     </button>
@@ -310,6 +310,11 @@
         const actionsDiv = itemElement.querySelector('.item-actions');
         const deleteBtn = itemElement.querySelector('.delete-btn');
         
+        if (!actionsDiv || !deleteBtn) {
+            console.error('Cannot find actions div or delete button');
+            return;
+        }
+        
         // Проверяем, нет ли уже кнопок
         if (actionsDiv.querySelector('.move-up-btn')) {
             return;
@@ -320,13 +325,19 @@
         moveUpBtn.className = 'btn btn-small btn-move move-up-btn';
         moveUpBtn.textContent = '↑';
         moveUpBtn.title = 'Переместить вверх';
-        moveUpBtn.onclick = () => moveItem(itemName, 'up');
+        moveUpBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            moveItem(itemName, 'up');
+        });
         
         const moveDownBtn = document.createElement('button');
         moveDownBtn.className = 'btn btn-small btn-move move-down-btn';
         moveDownBtn.textContent = '↓';
         moveDownBtn.title = 'Переместить вниз';
-        moveDownBtn.onclick = () => moveItem(itemName, 'down');
+        moveDownBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            moveItem(itemName, 'down');
+        });
         
         // Вставляем кнопки перед кнопкой удаления
         actionsDiv.insertBefore(moveDownBtn, deleteBtn);
@@ -751,11 +762,33 @@
         // Инициализация редактирования
         initItemEditing();
         
-        // Добавляем кнопки перемещения для уже купленных элементов
-        document.querySelectorAll('.shopping-item.bought').forEach(item => {
-            addMoveButtons(item);
-        });
+        // Инициализация кнопок перемещения
+        initMoveButtons();
     });
+    
+    // Инициализация кнопок перемещения
+    function initMoveButtons() {
+        // Добавляем обработчики для уже существующих кнопок в шаблоне
+        document.querySelectorAll('.move-up-btn, .move-down-btn').forEach(btn => {
+            const itemName = btn.getAttribute('data-item-name') || btn.closest('.shopping-item')?.getAttribute('data-name');
+            if (!itemName) return;
+            
+            const direction = btn.classList.contains('move-up-btn') ? 'up' : 'down';
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                moveItem(itemName, direction);
+            });
+        });
+        
+        // Добавляем кнопки перемещения для уже купленных элементов (если их еще нет)
+        document.querySelectorAll('.shopping-item.bought').forEach(item => {
+            const actionsDiv = item.querySelector('.item-actions');
+            if (actionsDiv && !actionsDiv.querySelector('.move-up-btn')) {
+                addMoveButtons(item);
+            }
+        });
+    }
     
     // Функции для редактирования элементов
     function initItemEditing() {
