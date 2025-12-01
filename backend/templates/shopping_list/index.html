@@ -40,12 +40,9 @@
             <li class="shopping-item priority-{% if item.priority == 3 %}high{% elif item.priority == 2 %}medium{% else %}low{% endif %} {% if item.bought %}bought{% endif %}" 
                 data-name="{{ item.name }}" 
                 data-category="{{ item.category.name }}"
-                draggable="true"
-                ondragstart="handleDragStart(event)"
-                ondragover="handleDragOver(event)"
-                ondrop="handleDrop(event)"
-                ondragend="handleDragEnd(event)">
-                <div class="item-name" onclick="editItem('{{ item.name|escapejs }}', '{{ item.category.name|escapejs }}', {{ item.priority }})">
+                data-priority="{{ item.priority }}"
+                draggable="true">
+                <div class="item-name">
                     <span class="priority-icon">
                         {% if item.priority == 3 %}🔥
                         {% elif item.priority == 2 %}🟡
@@ -272,6 +269,8 @@
     // Переменные для drag and drop
     let draggedElement = null;
     let draggedIndex = null;
+    let isDragging = false;
+    let dragStartTime = 0;
     
     function getCSRFToken() {
         // Сначала пытаемся получить из скрытого input
@@ -675,27 +674,64 @@
                 }, 50);
             }
         });
+        
+        // Инициализация drag and drop и редактирования
+        initDragAndDrop();
+        initItemEditing();
     });
     
     // Функции для редактирования элементов
+    function initItemEditing() {
+        const items = document.querySelectorAll('.shopping-item');
+        
+        items.forEach(item => {
+            const itemName = item.querySelector('.item-name');
+            if (itemName) {
+                itemName.addEventListener('click', function(e) {
+                    // Не открываем редактирование, если был drag
+                    if (isDragging || (Date.now() - dragStartTime < 200)) {
+                        return;
+                    }
+                    
+                    const name = item.getAttribute('data-name');
+                    const category = item.getAttribute('data-category');
+                    const priority = parseInt(item.getAttribute('data-priority')) || 2;
+                    
+                    editItem(name, category, priority);
+                });
+            }
+        });
+    }
+    
     function editItem(name, category, priority) {
         // Скрываем форму добавления, показываем форму редактирования
-        document.querySelector('.add-form').style.display = 'none';
+        const addForm = document.querySelector('.add-form');
+        if (addForm) {
+            addForm.style.display = 'none';
+        }
         const editForm = document.getElementById('editForm');
-        editForm.style.display = 'block';
+        if (editForm) {
+            editForm.style.display = 'block';
+        }
         
         // Заполняем форму данными элемента
-        document.getElementById('editItemName').value = name;
-        document.getElementById('editItemCategory').value = category;
-        document.getElementById('editItemPriority').value = priority;
+        const nameInput = document.getElementById('editItemName');
+        const categorySelect = document.getElementById('editItemCategory');
+        const prioritySelect = document.getElementById('editItemPriority');
+        
+        if (nameInput) nameInput.value = name;
+        if (categorySelect) categorySelect.value = category;
+        if (prioritySelect) prioritySelect.value = priority;
         
         // Сохраняем оригинальные значения
         editingItemName = name;
         editingItemCategory = category;
         
         // Фокусируемся на поле ввода
-        document.getElementById('editItemName').focus();
-        document.getElementById('editItemName').select();
+        if (nameInput) {
+            nameInput.focus();
+            nameInput.select();
+        }
     }
     
     async function saveEditItem() {
@@ -759,46 +795,54 @@
     }
     
     // Функции для drag and drop
+    function initDragAndDrop() {
+        const items = document.querySelectorAll('.shopping-item');
+        
+        items.forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragover', handleDragOver);
+            item.addEventListener('drop', handleDrop);
+            item.addEventListener('dragend', handleDragEnd);
+        });
+    }
+    
     function handleDragStart(e) {
-        draggedElement = this;
-        draggedIndex = Array.from(this.parentNode.children).indexOf(this);
-        this.classList.add('dragging');
+        draggedElement = e.currentTarget;
+        draggedIndex = Array.from(e.currentTarget.parentNode.children).indexOf(e.currentTarget);
+        e.currentTarget.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
+        e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+        isDragging = true;
+        dragStartTime = Date.now();
     }
     
     function handleDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
+        e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         
         const target = e.currentTarget;
         if (target !== draggedElement) {
             target.classList.add('drag-over');
         }
-        return false;
     }
     
     function handleDragEnd(e) {
-        this.classList.remove('dragging');
+        e.currentTarget.classList.remove('dragging');
         // Убираем класс drag-over со всех элементов
         document.querySelectorAll('.shopping-item').forEach(item => {
             item.classList.remove('drag-over');
         });
+        isDragging = false;
     }
     
     async function handleDrop(e) {
-        if (e.stopPropagation) {
-            e.stopPropagation();
-        }
-        
         e.preventDefault();
+        e.stopPropagation();
         
         const target = e.currentTarget;
         target.classList.remove('drag-over');
         
-        if (draggedElement !== target) {
+        if (draggedElement && draggedElement !== target) {
             const allItems = Array.from(target.parentNode.children);
             const targetIndex = allItems.indexOf(target);
             const draggedIndex = allItems.indexOf(draggedElement);
@@ -813,8 +857,6 @@
             // Сохраняем новый порядок на сервере
             await saveItemOrder();
         }
-        
-        return false;
     }
     
     async function saveItemOrder() {
