@@ -60,3 +60,33 @@ class InternalNetworkMiddleware:
         except ValueError:
             return False
 
+
+class UserProfileMiddleware:
+    """Middleware для автоматического создания UserProfile, если его нет"""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated:
+            try:
+                # Проверяем наличие профиля
+                request.user.profile
+            except:
+                # Если профиля нет, создаем его
+                from .models import UserProfile
+                try:
+                    import time
+                    unique_id = f"local-{request.user.id}-{int(time.time() * 1000)}"
+                    UserProfile.objects.create(
+                        user=request.user,
+                        yandex_id=unique_id
+                    )
+                except Exception as e:
+                    # Логируем ошибку, но не блокируем запрос
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error creating UserProfile for user {request.user.username}: {str(e)}")
+        
+        response = self.get_response(request)
+        return response
+
