@@ -40,8 +40,7 @@
             <li class="shopping-item priority-{% if item.priority == 3 %}high{% elif item.priority == 2 %}medium{% else %}low{% endif %} {% if item.bought %}bought{% endif %}" 
                 data-name="{{ item.name }}" 
                 data-category="{{ item.category.name }}"
-                data-priority="{{ item.priority }}"
-                draggable="true">
+                data-priority="{{ item.priority }}">
                 <div class="item-name">
                     <span class="priority-icon">
                         {% if item.priority == 3 %}🔥
@@ -57,6 +56,18 @@
                            {% if item.bought %}checked{% endif %}
                            onchange="handleCheckboxChange('{{ item.name|escapejs }}', this);"
                            data-item-name="{{ item.name }}">
+                    {% if item.bought %}
+                    <button class="btn btn-small btn-move move-up-btn" 
+                            onclick="moveItem('{{ item.name|escapejs }}', 'up')"
+                            title="Переместить вверх">
+                        ↑
+                    </button>
+                    <button class="btn btn-small btn-move move-down-btn" 
+                            onclick="moveItem('{{ item.name|escapejs }}', 'down')"
+                            title="Переместить вниз">
+                        ↓
+                    </button>
+                    {% endif %}
                     <button class="btn btn-small btn-danger delete-btn" 
                             onclick="deleteItem('{{ item.name|escapejs }}')"
                             style="display: {% if item.bought %}inline-block{% else %}none{% endif %};">
@@ -107,7 +118,7 @@
                 <button class="btn btn-primary" onclick="saveEditItem()">Сохранить</button>
                 <button class="btn btn-secondary" onclick="cancelEdit()">Отмена</button>
             </div>
-        </div>
+    </div>
         
         <div class="add-form">
             <h3>Добавить элемент</h3>
@@ -266,11 +277,34 @@
     let editingItemName = null;
     let editingItemCategory = null;
     
-    // Переменные для drag and drop
-    let draggedElement = null;
-    let draggedIndex = null;
-    let isDragging = false;
-    let dragStartTime = 0;
+    // Функция для добавления кнопок перемещения
+    function addMoveButtons(itemElement) {
+        const itemName = itemElement.getAttribute('data-name');
+        const actionsDiv = itemElement.querySelector('.item-actions');
+        const deleteBtn = itemElement.querySelector('.delete-btn');
+        
+        // Проверяем, нет ли уже кнопок
+        if (actionsDiv.querySelector('.move-up-btn')) {
+            return;
+        }
+        
+        // Создаем кнопки перемещения
+        const moveUpBtn = document.createElement('button');
+        moveUpBtn.className = 'btn btn-small btn-move move-up-btn';
+        moveUpBtn.textContent = '↑';
+        moveUpBtn.title = 'Переместить вверх';
+        moveUpBtn.onclick = () => moveItem(itemName, 'up');
+        
+        const moveDownBtn = document.createElement('button');
+        moveDownBtn.className = 'btn btn-small btn-move move-down-btn';
+        moveDownBtn.textContent = '↓';
+        moveDownBtn.title = 'Переместить вниз';
+        moveDownBtn.onclick = () => moveItem(itemName, 'down');
+        
+        // Вставляем кнопки перед кнопкой удаления
+        actionsDiv.insertBefore(moveDownBtn, deleteBtn);
+        actionsDiv.insertBefore(moveUpBtn, moveDownBtn);
+    }
     
     function getCSRFToken() {
         // Сначала пытаемся получить из скрытого input
@@ -339,15 +373,27 @@
             return;
         }
         
-        // Показываем/скрываем кнопку удалить сразу для лучшего UX
+        // Показываем/скрываем кнопки удалить и перемещения сразу для лучшего UX
         const itemElement = checkbox.closest('.shopping-item');
         const deleteBtn = itemElement.querySelector('.delete-btn');
+        const moveUpBtn = itemElement.querySelector('.move-up-btn');
+        const moveDownBtn = itemElement.querySelector('.move-down-btn');
+        
         if (bought) {
             deleteBtn.style.display = 'inline-block';
             itemElement.classList.add('bought');
+            // Добавляем кнопки перемещения, если их еще нет
+            if (!moveUpBtn || !moveDownBtn) {
+                addMoveButtons(itemElement);
+            } else {
+                moveUpBtn.style.display = 'inline-block';
+                moveDownBtn.style.display = 'inline-block';
+            }
         } else {
             deleteBtn.style.display = 'none';
             itemElement.classList.remove('bought');
+            if (moveUpBtn) moveUpBtn.style.display = 'none';
+            if (moveDownBtn) moveDownBtn.style.display = 'none';
         }
         
         try {
@@ -675,9 +721,13 @@
             }
         });
         
-        // Инициализация drag and drop и редактирования
-        initDragAndDrop();
+        // Инициализация редактирования
         initItemEditing();
+        
+        // Добавляем кнопки перемещения для уже купленных элементов
+        document.querySelectorAll('.shopping-item.bought').forEach(item => {
+            addMoveButtons(item);
+        });
     });
     
     // Функции для редактирования элементов
@@ -794,69 +844,37 @@
         editingItemCategory = null;
     }
     
-    // Функции для drag and drop
-    function initDragAndDrop() {
-        const items = document.querySelectorAll('.shopping-item');
+    // Функция для перемещения элемента вверх или вниз
+    async function moveItem(itemName, direction) {
+        const items = Array.from(document.querySelectorAll('.shopping-item'));
+        const currentIndex = items.findIndex(item => item.getAttribute('data-name') === itemName);
         
-        items.forEach(item => {
-            item.addEventListener('dragstart', handleDragStart);
-            item.addEventListener('dragover', handleDragOver);
-            item.addEventListener('drop', handleDrop);
-            item.addEventListener('dragend', handleDragEnd);
-        });
-    }
-    
-    function handleDragStart(e) {
-        draggedElement = e.currentTarget;
-        draggedIndex = Array.from(e.currentTarget.parentNode.children).indexOf(e.currentTarget);
-        e.currentTarget.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
-        isDragging = true;
-        dragStartTime = Date.now();
-    }
-    
-    function handleDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        
-        const target = e.currentTarget;
-        if (target !== draggedElement) {
-            target.classList.add('drag-over');
+        if (currentIndex === -1) {
+            console.error('Item not found:', itemName);
+            return;
         }
-    }
-    
-    function handleDragEnd(e) {
-        e.currentTarget.classList.remove('dragging');
-        // Убираем класс drag-over со всех элементов
-        document.querySelectorAll('.shopping-item').forEach(item => {
-            item.classList.remove('drag-over');
-        });
-        isDragging = false;
-    }
-    
-    async function handleDrop(e) {
-        e.preventDefault();
-        e.stopPropagation();
         
-        const target = e.currentTarget;
-        target.classList.remove('drag-over');
-        
-        if (draggedElement && draggedElement !== target) {
-            const allItems = Array.from(target.parentNode.children);
-            const targetIndex = allItems.indexOf(target);
-            const draggedIndex = allItems.indexOf(draggedElement);
-            
-            // Перемещаем элемент в DOM
-            if (draggedIndex < targetIndex) {
-                target.parentNode.insertBefore(draggedElement, target.nextSibling);
-            } else {
-                target.parentNode.insertBefore(draggedElement, target);
-            }
-            
-            // Сохраняем новый порядок на сервере
-            await saveItemOrder();
+        let newIndex;
+        if (direction === 'up') {
+            if (currentIndex === 0) return; // Уже вверху
+            newIndex = currentIndex - 1;
+        } else {
+            if (currentIndex === items.length - 1) return; // Уже внизу
+            newIndex = currentIndex + 1;
         }
+        
+        // Перемещаем элемент в DOM
+        const itemElement = items[currentIndex];
+        const targetElement = items[newIndex];
+        
+        if (direction === 'up') {
+            itemElement.parentNode.insertBefore(itemElement, targetElement);
+        } else {
+            itemElement.parentNode.insertBefore(itemElement, targetElement.nextSibling);
+        }
+        
+        // Сохраняем новый порядок на сервере
+        await saveItemOrder();
     }
     
     async function saveItemOrder() {
