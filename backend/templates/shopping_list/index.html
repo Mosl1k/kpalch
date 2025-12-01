@@ -57,22 +57,16 @@
                            onchange="handleCheckboxChange('{{ item.name|escapejs }}', this);"
                            data-item-name="{{ item.name }}">
                     {% if item.bought %}
-                    <button class="btn btn-small btn-move move-up-btn" 
-                            data-item-name="{{ item.name|escapejs }}"
-                            title="Переместить вверх">
-                        ↑
+                    <button class="btn btn-small btn-primary edit-btn" 
+                            onclick="openEditModal('{{ item.name|escapejs }}', '{{ item.category.name|escapejs }}', {{ item.priority }})"
+                            title="Редактировать">
+                        Редактировать
                     </button>
-                    <button class="btn btn-small btn-move move-down-btn" 
-                            data-item-name="{{ item.name|escapejs }}"
-                            title="Переместить вниз">
-                        ↓
-                    </button>
-                    {% endif %}
                     <button class="btn btn-small btn-danger delete-btn" 
-                            onclick="deleteItem('{{ item.name|escapejs }}')"
-                            style="display: {% if item.bought %}inline-block{% else %}none{% endif %};">
+                            onclick="deleteItem('{{ item.name|escapejs }}')">
                         Удалить
                     </button>
+                    {% endif %}
                 </div>
             </li>
             {% endfor %}
@@ -95,14 +89,14 @@
         </button>
     </div>
         
-        <!-- Форма редактирования элемента -->
-        <div class="edit-form" id="editForm" style="display: none;">
-            <h3>Редактировать элемент</h3>
-            <div class="form-group">
+        <!-- Модальное окно редактирования элемента -->
+        <div id="editModal" style="display: none;">
+            <div>
+                <h3>Редактировать элемент</h3>
                 <input type="text" 
                        id="editItemName" 
                        placeholder="Название элемента"
-                       onkeypress="if(event.key === 'Enter') saveEditItem(); if(event.key === 'Escape') cancelEdit();">
+                       onkeypress="if(event.key === 'Enter') saveEditItem(); if(event.key === 'Escape') closeEditModal();">
                 <select id="editItemCategory">
                     {% for category in categories %}
                     <option value="{{ category.name }}">
@@ -116,9 +110,9 @@
                     <option value="3">Высокий приоритет</option>
                 </select>
                 <button class="btn btn-primary" onclick="saveEditItem()">Сохранить</button>
-                <button class="btn btn-secondary" onclick="cancelEdit()">Отмена</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
             </div>
-    </div>
+        </div>
         
         <div class="add-form">
             <h3>Добавить элемент</h3>
@@ -301,8 +295,7 @@
     const currentCategory = '{% if current_category %}{{ current_category }}{% else %}купить{% endif %}';
     
     // Переменные для редактирования
-    let editingItemName = null;
-    let editingItemCategory = null;
+    let currentEditItem = null;
     
     // Функция для добавления кнопок перемещения
     function addMoveButtons(itemElement) {
@@ -770,11 +763,13 @@
             }
         });
         
-        // Инициализация редактирования
-        initItemEditing();
-        
-        // Инициализация кнопок перемещения
-        initMoveButtons();
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const editModal = document.getElementById('editModal');
+            if (event.target == editModal) {
+                closeEditModal();
+            }
+        };
     });
     
     // Инициализация кнопок перемещения
@@ -820,65 +815,34 @@
     }
     
     // Функции для редактирования элементов
-    function initItemEditing() {
-        const items = document.querySelectorAll('.shopping-item');
-        
-        items.forEach(item => {
-            const itemName = item.querySelector('.item-name');
-            if (itemName) {
-                itemName.addEventListener('click', function(e) {
-                    const name = item.getAttribute('data-name');
-                    const category = item.getAttribute('data-category');
-                    const priority = parseInt(item.getAttribute('data-priority')) || 2;
-                    
-                    editItem(name, category, priority);
-                });
-            }
-        });
-    }
-    
-    function editItem(name, category, priority) {
-        // Скрываем форму добавления, показываем форму редактирования
-        const addForm = document.querySelector('.add-form');
-        if (addForm) {
-            addForm.style.display = 'none';
-        }
-        const editForm = document.getElementById('editForm');
-        if (editForm) {
-            editForm.style.display = 'block';
-        }
-        
-        // Заполняем форму данными элемента
-        const nameInput = document.getElementById('editItemName');
-        const categorySelect = document.getElementById('editItemCategory');
-        const prioritySelect = document.getElementById('editItemPriority');
-        
-        if (nameInput) nameInput.value = name;
-        if (categorySelect) categorySelect.value = category;
-        if (prioritySelect) prioritySelect.value = priority;
-        
-        // Сохраняем оригинальные значения
-        editingItemName = name;
-        editingItemCategory = category;
+    function openEditModal(name, category, priority) {
+        currentEditItem = name;
+        document.getElementById('editItemName').value = name;
+        document.getElementById('editItemCategory').value = category;
+        document.getElementById('editItemPriority').value = priority;
+        document.getElementById('editModal').style.display = 'block';
         
         // Фокусируемся на поле ввода
-        if (nameInput) {
-            nameInput.focus();
-            nameInput.select();
-        }
+        document.getElementById('editItemName').focus();
+        document.getElementById('editItemName').select();
+    }
+    
+    function closeEditModal() {
+        currentEditItem = null;
+        document.getElementById('editModal').style.display = 'none';
     }
     
     async function saveEditItem() {
         const newName = document.getElementById('editItemName').value.trim();
-        const newCategory = document.getElementById('editItemCategory').value;
+        const newCategory = document.getElementById('editItemCategory').value.trim();
         const newPriority = parseInt(document.getElementById('editItemPriority').value);
         
-        if (!newName) {
-            alert('Введите название элемента');
+        if (!newName || !newCategory) {
+            alert('Заполните все поля');
             return;
         }
         
-        if (!editingItemName || !editingItemCategory) {
+        if (!currentEditItem) {
             alert('Ошибка: не найден редактируемый элемент');
             return;
         }
@@ -890,7 +854,7 @@
         }
         
         try {
-            const response = await fetch(`/api/edit/${encodeURIComponent(editingItemName)}?oldCategory=${encodeURIComponent(editingItemCategory)}`, {
+            const response = await fetch(`/api/edit/${encodeURIComponent(currentEditItem)}?oldCategory=${encodeURIComponent(currentCategory)}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -905,8 +869,10 @@
             });
             
             if (response.ok) {
+                currentEditItem = null;
+                document.getElementById('editModal').style.display = 'none';
                 // Если категория изменилась, перезагружаем страницу с новой категорией
-                if (newCategory !== editingItemCategory) {
+                if (newCategory !== currentCategory) {
                     window.location.href = `/?category=${encodeURIComponent(newCategory)}`;
                 } else {
                     window.location.reload();
@@ -919,13 +885,6 @@
             console.error('Error:', error);
             alert('Ошибка при редактировании элемента: ' + error.message);
         }
-    }
-    
-    function cancelEdit() {
-        document.getElementById('editForm').style.display = 'none';
-        document.querySelector('.add-form').style.display = 'block';
-        editingItemName = null;
-        editingItemCategory = null;
     }
     
     // Функция для перемещения элемента вверх или вниз
