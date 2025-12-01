@@ -50,6 +50,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .avatar:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        .user-name-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .user-name-link:hover {
+            opacity: 0.8;
+            text-decoration: underline;
         }
         .btn {
             padding: 0.5rem 1rem;
@@ -257,14 +272,16 @@
             {% if user.is_authenticated %}
             <div class="user-menu">
                 <div class="user-menu-dropdown">
-                    <div class="user-info" onclick="toggleUserMenu()">
+                    <div class="user-info">
                         {% if user.profile.avatar_url %}
-                        <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar">
+                        <img src="{{ user.profile.avatar_url }}" alt="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" class="avatar" onclick="toggleUserMenu()">
                         {% else %}
-                        <div class="avatar">{{ user.username.0|upper }}</div>
+                        <div class="avatar" onclick="toggleUserMenu()">{{ user.username.0|upper }}</div>
                         {% endif %}
-                        <span>{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</span>
-                        <span style="margin-left: 0.5rem;">▼</span>
+                        <a href="{% url 'friends' %}" class="user-name-link" title="Управление друзьями">
+                            {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+                        </a>
+                        <span style="margin-left: 0.5rem; cursor: pointer;" onclick="toggleUserMenu()" title="Меню пользователя">▼</span>
                     </div>
                     <div class="dropdown-menu" id="userDropdownMenu">
                         <div class="dropdown-item" style="font-weight: 500; color: #666;">
