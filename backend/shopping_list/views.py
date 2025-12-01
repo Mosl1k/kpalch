@@ -71,7 +71,6 @@ def register(request):
                     )
                 # Автоматически логиним пользователя после регистрации
                 # Указываем backend, так как у нас несколько authentication backends
-                from django.contrib.auth import login
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 return redirect('index')
             except Exception as e:
