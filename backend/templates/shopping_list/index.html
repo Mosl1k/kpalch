@@ -367,7 +367,7 @@
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         transition: all 0.3s;
-        min-width: 80px;
+        min-width: 160px;
         position: relative;
         z-index: 1001;
     }
@@ -378,13 +378,13 @@
     }
     
     .btn-add-item {
-        width: 50px;
-        height: 50px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
         border: none;
-        font-size: 2rem;
+        font-size: 3rem;
         font-weight: bold;
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
@@ -406,7 +406,7 @@
     
     /* Добавляем отступ снизу для контента, чтобы не перекрывался кнопками */
     .container {
-        padding-bottom: 100px;
+        padding-bottom: 120px;
     }
     
     @media (max-width: 768px) {
@@ -418,17 +418,21 @@
         .btn-nav {
             padding: 0.6rem 1.5rem;
             font-size: 1.3rem;
-            min-width: 70px;
+            min-width: 140px;
         }
         
         .btn-add-item {
-            width: 45px;
-            height: 45px;
-            font-size: 1.8rem;
+            width: 90px;
+            height: 90px;
+            font-size: 2.5rem;
         }
         
         .container {
-            padding-bottom: 90px;
+            padding-bottom: 120px;
+        }
+        
+        .main-content {
+            padding: 0 0.5rem;
         }
     }
 </style>
@@ -1160,10 +1164,13 @@
         
         if (isHidden) {
             addForm.style.display = 'block';
-            // Фокусируемся на поле ввода
+            // Фокусируемся на поле ввода и выделяем текст (если есть)
             const nameInput = document.getElementById('itemName');
             if (nameInput) {
-                setTimeout(() => nameInput.focus(), 100);
+                setTimeout(() => {
+                    nameInput.focus();
+                    nameInput.select();
+                }, 100);
             }
         } else {
             addForm.style.display = 'none';
