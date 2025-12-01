@@ -72,6 +72,10 @@ def register(request):
                 logger = logging.getLogger(__name__)
                 error_trace = traceback.format_exc()
                 logger.error(f"Error during user registration: {str(e)}\n{error_trace}")
+                # Выводим в stderr для видимости в логах Docker
+                import sys
+                print(f"REGISTRATION ERROR: {str(e)}", file=sys.stderr)
+                print(error_trace, file=sys.stderr)
                 form.add_error(None, f"Ошибка при регистрации: {str(e)}")
     else:
         form = UserRegistrationForm()
