@@ -310,38 +310,49 @@
         const actionsDiv = itemElement.querySelector('.item-actions');
         const deleteBtn = itemElement.querySelector('.delete-btn');
         
+        console.log('[addMoveButtons] Adding buttons for item:', itemName);
+        
         if (!actionsDiv || !deleteBtn) {
-            console.error('Cannot find actions div or delete button');
+            console.error('[addMoveButtons] Cannot find actions div or delete button', {actionsDiv, deleteBtn});
             return;
         }
         
         // Проверяем, нет ли уже кнопок
         if (actionsDiv.querySelector('.move-up-btn')) {
+            console.log('[addMoveButtons] Buttons already exist for', itemName);
             return;
         }
         
         // Создаем кнопки перемещения
         const moveUpBtn = document.createElement('button');
         moveUpBtn.className = 'btn btn-small btn-move move-up-btn';
+        moveUpBtn.setAttribute('data-item-name', itemName);
         moveUpBtn.textContent = '↑';
         moveUpBtn.title = 'Переместить вверх';
         moveUpBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            e.preventDefault();
+            console.log('[addMoveButtons] Move up clicked for', itemName);
             moveItem(itemName, 'up');
         });
         
         const moveDownBtn = document.createElement('button');
         moveDownBtn.className = 'btn btn-small btn-move move-down-btn';
+        moveDownBtn.setAttribute('data-item-name', itemName);
         moveDownBtn.textContent = '↓';
         moveDownBtn.title = 'Переместить вниз';
         moveDownBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            e.preventDefault();
+            console.log('[addMoveButtons] Move down clicked for', itemName);
             moveItem(itemName, 'down');
         });
         
         // Вставляем кнопки перед кнопкой удаления
         actionsDiv.insertBefore(moveDownBtn, deleteBtn);
         actionsDiv.insertBefore(moveUpBtn, moveDownBtn);
+        
+        console.log('[addMoveButtons] Buttons added successfully for', itemName);
     }
     
     function getCSRFToken() {
@@ -768,26 +779,47 @@
     
     // Инициализация кнопок перемещения
     function initMoveButtons() {
+        console.log('[initMoveButtons] Initializing move buttons...');
+        
         // Добавляем обработчики для уже существующих кнопок в шаблоне
-        document.querySelectorAll('.move-up-btn, .move-down-btn').forEach(btn => {
+        const existingButtons = document.querySelectorAll('.move-up-btn, .move-down-btn');
+        console.log('[initMoveButtons] Found', existingButtons.length, 'existing buttons in template');
+        
+        existingButtons.forEach(btn => {
             const itemName = btn.getAttribute('data-item-name') || btn.closest('.shopping-item')?.getAttribute('data-name');
-            if (!itemName) return;
+            if (!itemName) {
+                console.warn('[initMoveButtons] Button found but no item name:', btn);
+                return;
+            }
             
             const direction = btn.classList.contains('move-up-btn') ? 'up' : 'down';
-            btn.addEventListener('click', function(e) {
+            console.log('[initMoveButtons] Adding handler for', itemName, direction);
+            
+            // Удаляем старый обработчик, если есть
+            btn.replaceWith(btn.cloneNode(true));
+            const newBtn = document.querySelector(`[data-item-name="${itemName}"].${direction === 'up' ? 'move-up-btn' : 'move-down-btn'}`);
+            
+            newBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 e.preventDefault();
+                console.log('[initMoveButtons] Button clicked:', itemName, direction);
                 moveItem(itemName, direction);
             });
         });
         
         // Добавляем кнопки перемещения для уже купленных элементов (если их еще нет)
-        document.querySelectorAll('.shopping-item.bought').forEach(item => {
+        const boughtItems = document.querySelectorAll('.shopping-item.bought');
+        console.log('[initMoveButtons] Found', boughtItems.length, 'bought items');
+        
+        boughtItems.forEach(item => {
             const actionsDiv = item.querySelector('.item-actions');
             if (actionsDiv && !actionsDiv.querySelector('.move-up-btn')) {
+                console.log('[initMoveButtons] Adding buttons for bought item:', item.getAttribute('data-name'));
                 addMoveButtons(item);
             }
         });
+        
+        console.log('[initMoveButtons] Initialization complete');
     }
     
     // Функции для редактирования элементов
