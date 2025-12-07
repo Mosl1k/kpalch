@@ -31,6 +31,10 @@
             {% endif %}
         </div>
         {% endfor %}
+        <!-- Кнопка поделиться списком -->
+        <button class="share-list-btn" onclick="openShareModal()" title="Поделиться списком">
+            <span class="share-icon">📤</span>
+        </button>
     </nav>
 
     <div id="shoppingListContainer">
@@ -141,6 +145,44 @@
                 <button class="btn btn-secondary" onclick="closeAddModal()">Отмена</button>
         </div>
         </div>
+        
+        <!-- Модальное окно шаринга списка (скрыто по умолчанию) -->
+        <div id="shareModal" style="display: none;">
+            <div>
+                <h3>Поделиться списком</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;" id="shareModalCategoryText">
+                    Выберите друга и отправьте ему текущий список
+                </p>
+                <div id="friendsListForShare" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
+                    <div style="text-align: center; padding: 1rem; color: #999;">Загрузка друзей...</div>
+                </div>
+                <textarea id="shareMessage" 
+                          placeholder="Сообщение (необязательно)" 
+                          style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; min-height: 80px; resize: vertical;"></textarea>
+                <button class="btn btn-primary" onclick="sendShareRequest()">Отправить</button>
+                <button class="btn btn-secondary" onclick="closeShareModal()">Отмена</button>
+            </div>
+        </div>
+        
+        <!-- Уведомление о входящих шарингах -->
+        <div id="sharedListsNotification" style="display: none;">
+            <div class="shared-lists-notification-content">
+                <span id="sharedListsNotificationText"></span>
+                <button class="btn btn-small btn-primary" onclick="showReceivedShares()">Посмотреть</button>
+                <button class="btn btn-small btn-secondary" onclick="closeSharedListsNotification()">✕</button>
+            </div>
+        </div>
+        
+        <!-- Модальное окно входящих шарингов -->
+        <div id="receivedSharesModal" style="display: none;">
+            <div>
+                <h3>Входящие списки</h3>
+                <div id="receivedSharesList" style="max-height: 400px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 2rem; color: #999;">Загрузка...</div>
+                </div>
+                <button class="btn btn-secondary" onclick="closeReceivedSharesModal()">Закрыть</button>
+            </div>
+        </div>
     
     <!-- Фиксированная панель навигации внизу -->
     <div class="nav-buttons">
@@ -208,6 +250,43 @@
     .add-category-btn:hover {
         transform: scale(1.1);
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+    /* Кнопка шаринга списка */
+    .share-list-btn {
+        width: auto;
+        min-width: 40px;
+        height: auto;
+        min-height: 40px;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: none;
+        color: white;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+        line-height: 1;
+    }
+    .share-list-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6);
+    }
+    .share-icon {
+        display: block;
+    }
+    @media (max-width: 768px) {
+        .share-list-btn {
+            min-width: 35px;
+            min-height: 35px;
+            padding: 0.4rem 0.8rem;
+            font-size: 1.2rem;
+        }
     }
     .add-category-form {
         position: absolute;
@@ -316,8 +395,8 @@
         flex: 1;
     }
     
-    /* Модальные окна (добавление и редактирование) */
-    #addModal, #editModal {
+    /* Модальные окна (добавление, редактирование и шаринг) */
+    #addModal, #editModal, #shareModal, #receivedSharesModal {
         position: fixed;
         left: 0;
         top: 0;
@@ -332,7 +411,7 @@
         box-sizing: border-box;
     }
     
-    #addModal > div, #editModal > div {
+    #addModal > div, #editModal > div, #shareModal > div, #receivedSharesModal > div {
         max-width: 400px;
         width: 100%;
         background: white;
@@ -342,13 +421,14 @@
         position: relative;
     }
     
-    #addModal h3, #editModal h3 {
+    #addModal h3, #editModal h3, #shareModal h3, #receivedSharesModal h3 {
         margin-top: 0;
         margin-bottom: 1rem;
     }
     
-    #addModal input, #editModal input,
-    #addModal select, #editModal select {
+    #addModal input, #editModal input, #shareModal input,
+    #addModal select, #editModal select, #shareModal select,
+    #shareModal textarea {
         font-size: 18px;
         padding: 10px;
         margin: 10px 0;
@@ -358,7 +438,7 @@
         border-radius: 5px;
     }
     
-    #addModal button, #editModal button {
+    #addModal button, #editModal button, #shareModal button, #receivedSharesModal button {
         font-size: 18px;
         padding: 10px 20px;
         margin: 10px 10px 10px 0;
@@ -367,18 +447,141 @@
         border-radius: 5px;
     }
     
-    #addModal button:last-child, #editModal button:last-child {
+    #addModal button:last-child, #editModal button:last-child, 
+    #shareModal button:last-child, #receivedSharesModal button:last-child {
         margin-right: 0;
     }
     
     @media (max-width: 480px) {
-        #addModal, #editModal {
+        #addModal, #editModal, #shareModal, #receivedSharesModal {
             padding: 10px;
         }
-        #addModal > div, #editModal > div {
+        #addModal > div, #editModal > div, #shareModal > div, #receivedSharesModal > div {
             padding: 15px;
             margin: 10px auto;
         }
+    }
+    
+    /* Уведомление о входящих шарингах */
+    #sharedListsNotification {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1500;
+        animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+    .shared-lists-notification-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .shared-lists-notification-content button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+    
+    /* Стили для списка друзей в модальном окне шаринга */
+    .friend-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .friend-item:hover {
+        background: #f5f5f5;
+    }
+    .friend-item.selected {
+        background: #e3f2fd;
+        border-color: #667eea;
+    }
+    .friend-item-name {
+        font-weight: 500;
+        color: #333;
+    }
+    .friend-item-email {
+        font-size: 0.85rem;
+        color: #999;
+    }
+    
+    /* Стили для входящих шарингов */
+    .shared-list-item {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: white;
+    }
+    .shared-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    .shared-list-info {
+        flex: 1;
+    }
+    .shared-list-from {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+    }
+    .shared-list-category {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .shared-list-message {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: #f5f5f5;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .shared-list-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-success {
+        background: #4caf50;
+        color: white;
+    }
+    .btn-success:hover {
+        background: #45a049;
+    }
+    .btn-danger {
+        background: #f44336;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #da190b;
     }
     
     .item-actions {
@@ -1267,6 +1470,8 @@
     window.onclick = function(event) {
         const addModal = document.getElementById('addModal');
         const editModal = document.getElementById('editModal');
+        const shareModal = document.getElementById('shareModal');
+        const receivedSharesModal = document.getElementById('receivedSharesModal');
         const categoryNav = document.querySelector('.category-nav');
         const addCategoryForm = document.getElementById('addCategoryForm');
         
@@ -1278,6 +1483,16 @@
         // Закрываем модальное окно редактирования
         if (event.target == editModal) {
             closeEditModal();
+        }
+        
+        // Закрываем модальное окно шаринга
+        if (event.target == shareModal) {
+            closeShareModal();
+        }
+        
+        // Закрываем модальное окно входящих шарингов
+        if (event.target == receivedSharesModal) {
+            closeReceivedSharesModal();
         }
         
         // Закрываем форму добавления категории
@@ -1329,6 +1544,363 @@
                 window.location.href = `/?category=${encodeURIComponent(savedCategory)}`;
             }
         }
+        
+        // Проверяем входящие шаринги при загрузке страницы
+        checkSharedLists();
+        
+        // Проверяем входящие шаринги каждые 30 секунд
+        setInterval(checkSharedLists, 30000);
+        
+        // Закрываем модальные окна по Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const shareModal = document.getElementById('shareModal');
+                const receivedSharesModal = document.getElementById('receivedSharesModal');
+                
+                if (shareModal && shareModal.style.display !== 'none') {
+                    closeShareModal();
+                } else if (receivedSharesModal && receivedSharesModal.style.display !== 'none') {
+                    closeReceivedSharesModal();
+                }
+            }
+        });
     });
+    
+    // ========== Функции для шаринга списков ==========
+    
+    let selectedFriendId = null;
+    
+    // Открыть модальное окно шаринга
+    async function openShareModal() {
+        const shareModal = document.getElementById('shareModal');
+        if (!shareModal) {
+            console.error('Share modal not found');
+            return;
+        }
+        
+        // Получаем название текущей категории
+        const currentCategoryLink = document.querySelector('.category-link.active');
+        let categoryDisplayName = 'текущий список';
+        if (currentCategoryLink) {
+            categoryDisplayName = currentCategoryLink.textContent.trim();
+        }
+        
+        // Обновляем текст в модальном окне
+        const categoryText = document.getElementById('shareModalCategoryText');
+        if (categoryText) {
+            categoryText.textContent = `Выберите друга и отправьте ему список "${categoryDisplayName}"`;
+        }
+        
+        // Проверяем, есть ли элементы в текущей категории
+        const itemsCount = document.querySelectorAll('.shopping-item').length;
+        if (itemsCount === 0) {
+            alert('В этом списке пока нет элементов. Добавьте элементы перед тем, как поделиться списком.');
+            return;
+        }
+        
+        selectedFriendId = null;
+        document.getElementById('shareMessage').value = '';
+        
+        // Загружаем список друзей
+        await loadFriendsForShare();
+        
+        // Показываем модальное окно
+        shareModal.style.display = 'flex';
+    }
+    
+    // Закрыть модальное окно шаринга
+    function closeShareModal() {
+        const shareModal = document.getElementById('shareModal');
+        if (shareModal) {
+            shareModal.style.display = 'none';
+        }
+        selectedFriendId = null;
+    }
+    
+    // Загрузить список друзей для шаринга
+    async function loadFriendsForShare() {
+        const friendsListDiv = document.getElementById('friendsListForShare');
+        if (!friendsListDiv) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/friends', {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                friendsListDiv.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Ошибка при загрузке друзей</div>';
+                return;
+            }
+            
+            const friends = await response.json();
+            
+            if (!Array.isArray(friends) || friends.length === 0) {
+                friendsListDiv.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">У вас пока нет друзей. Добавьте друзей на странице <a href="/friends" style="color: #667eea;">Друзья</a></div>';
+                return;
+            }
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+            friends.forEach(friend => {
+                html += `
+                    <div class="friend-item" onclick="selectFriend(${friend.id})" data-friend-id="${friend.id}">
+                        <div class="friend-item-name">${friend.full_name || friend.username || 'Неизвестный'}</div>
+                        <div class="friend-item-email">${friend.email || ''}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            friendsListDiv.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading friends:', error);
+            friendsListDiv.innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Ошибка при загрузке друзей</div>';
+        }
+    }
+    
+    // Выбрать друга
+    function selectFriend(friendId) {
+        selectedFriendId = friendId;
+        
+        // Обновляем визуальное выделение
+        document.querySelectorAll('.friend-item').forEach(item => {
+            if (parseInt(item.getAttribute('data-friend-id')) === friendId) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Отправить запрос на шаринг
+    async function sendShareRequest() {
+        if (!selectedFriendId) {
+            alert('Выберите друга');
+            return;
+        }
+        
+        const message = document.getElementById('shareMessage').value.trim();
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/share-list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    user_id: selectedFriendId,
+                    category: currentCategory,
+                    message: message
+                })
+            });
+            
+            if (response.ok) {
+                alert('Список успешно отправлен другу!');
+                closeShareModal();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при отправке списка');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при отправке списка: ' + error.message);
+        }
+    }
+    
+    // Проверить входящие шаринги
+    async function checkSharedLists() {
+        try {
+            const response = await fetch('/api/shared-lists', {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                return;
+            }
+            
+            const data = await response.json();
+            const received = data.received || [];
+            
+            if (received.length > 0) {
+                showSharedListsNotification(received.length);
+            } else {
+                closeSharedListsNotification();
+            }
+        } catch (error) {
+            console.error('Error checking shared lists:', error);
+        }
+    }
+    
+    // Показать уведомление о входящих шарингах
+    function showSharedListsNotification(count) {
+        const notification = document.getElementById('sharedListsNotification');
+        const text = document.getElementById('sharedListsNotificationText');
+        
+        if (notification && text) {
+            text.textContent = `У вас ${count} ${count === 1 ? 'новый список' : count < 5 ? 'новых списка' : 'новых списков'}`;
+            notification.style.display = 'block';
+        }
+    }
+    
+    // Закрыть уведомление о входящих шарингах
+    function closeSharedListsNotification() {
+        const notification = document.getElementById('sharedListsNotification');
+        if (notification) {
+            notification.style.display = 'none';
+        }
+    }
+    
+    // Показать модальное окно с входящими шарингами
+    async function showReceivedShares() {
+        const modal = document.getElementById('receivedSharesModal');
+        if (!modal) {
+            return;
+        }
+        
+        await loadReceivedShares();
+        modal.style.display = 'flex';
+        closeSharedListsNotification();
+    }
+    
+    // Закрыть модальное окно входящих шарингов
+    function closeReceivedSharesModal() {
+        const modal = document.getElementById('receivedSharesModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Загрузить входящие шаринги
+    async function loadReceivedShares() {
+        const sharesListDiv = document.getElementById('receivedSharesList');
+        if (!sharesListDiv) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/shared-lists', {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                sharesListDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #999;">Ошибка при загрузке</div>';
+                return;
+            }
+            
+            const data = await response.json();
+            const received = data.received || [];
+            
+            if (received.length === 0) {
+                sharesListDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #999;">Нет входящих списков</div>';
+                return;
+            }
+            
+            let html = '<div style="display: flex; flex-direction: column;">';
+            received.forEach(share => {
+                const fromUser = share.from_user || {};
+                const category = share.category || {};
+                html += `
+                    <div class="shared-list-item">
+                        <div class="shared-list-header">
+                            <div class="shared-list-info">
+                                <div class="shared-list-from">${fromUser.full_name || fromUser.username || 'Неизвестный'}</div>
+                                <div class="shared-list-category">Список: ${category.display_name || category.name || ''}</div>
+                            </div>
+                        </div>
+                        ${share.message ? `<div class="shared-list-message">${share.message}</div>` : ''}
+                        <div class="shared-list-actions">
+                            <button class="btn btn-small btn-success" onclick="acceptSharedList(${share.id})">Принять</button>
+                            <button class="btn btn-small btn-danger" onclick="rejectSharedList(${share.id})">Отклонить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            sharesListDiv.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading received shares:', error);
+            sharesListDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #999;">Ошибка при загрузке</div>';
+        }
+    }
+    
+    // Принять шаринг списка
+    async function acceptSharedList(sharedListId) {
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/shared-list/${sharedListId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                alert('Список принят! Элементы добавлены в ваш список.');
+                await loadReceivedShares();
+                await checkSharedLists();
+                // Перезагружаем страницу, чтобы показать новые элементы
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при принятии списка');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при принятии списка: ' + error.message);
+        }
+    }
+    
+    // Отклонить шаринг списка
+    async function rejectSharedList(sharedListId) {
+        if (!confirm('Отклонить этот список?')) {
+            return;
+        }
+        
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            alert('Ошибка: не удалось получить CSRF токен');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/shared-list/${sharedListId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                alert('Список отклонен');
+                await loadReceivedShares();
+                await checkSharedLists();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Ошибка при отклонении списка');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при отклонении списка: ' + error.message);
+        }
+    }
 </script>
 {% endblock %}
