@@ -783,6 +783,13 @@ def accept_shared_list(request, shared_list_id):
         category=shared_list.category
     )
     
+    # Удаляем элементы участника в этой категории, так как теперь это общий список
+    # и все элементы должны принадлежать владельцу
+    ShoppingItem.objects.filter(
+        user=request.user,
+        category=shared_list.category
+    ).delete()
+    
     shared_list.status = 'accepted'
     shared_list.save()
     
