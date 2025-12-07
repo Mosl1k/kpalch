@@ -416,17 +416,21 @@ def list_users(request):
         else:
             friend_ids.add(friendship.from_user.id)
     
-    # Получаем список пользователей, которым МЫ отправили запрос (исходящие pending)
-    # НЕ исключаем тех, кто отправил запрос нам - они должны быть видны в разделе "Входящие запросы"
-    outgoing_pending = Friendship.objects.filter(
-        from_user=request.user,
+    # Получаем список пользователей, с которыми есть pending запросы в ЛЮБОМ направлении
+    # (мы отправили им ИЛИ они отправили нам)
+    pending_friendships = Friendship.objects.filter(
         status='pending'
+    ).filter(
+        Q(from_user=request.user) | Q(to_user=request.user)
     )
     pending_user_ids = set()
-    for friendship in outgoing_pending:
-        pending_user_ids.add(friendship.to_user.id)
+    for friendship in pending_friendships:
+        if friendship.from_user == request.user:
+            pending_user_ids.add(friendship.to_user.id)
+        else:
+            pending_user_ids.add(friendship.from_user.id)
     
-    # Исключаем друзей и пользователей, которым мы уже отправили запрос
+    # Исключаем друзей и пользователей, с которыми есть pending запросы
     users = users.exclude(id__in=friend_ids).exclude(id__in=pending_user_ids)
     
     serializer = UserSerializer(users, many=True)
@@ -444,13 +448,16 @@ def list_friends(request):
         Q(from_user=request.user) | Q(to_user=request.user)
     )
     
-    # Получаем друзей (не самого пользователя)
-    friends = []
+    # Получаем друзей (не самого пользователя), используем set для удаления дубликатов
+    friend_ids = set()
     for friendship in friendships:
         if friendship.from_user == request.user:
-            friends.append(friendship.to_user)
+            friend_ids.add(friendship.to_user.id)
         else:
-            friends.append(friendship.from_user)
+            friend_ids.add(friendship.from_user.id)
+    
+    # Получаем уникальных друзей
+    friends = User.objects.filter(id__in=friend_ids)
     
     serializer = UserSerializer(friends, many=True)
     return Response(serializer.data)
@@ -485,7 +492,37 @@ def send_friend_request(request):
     if to_user == request.user:
         return Response({'error': 'Cannot send friend request to yourself'}, status=400)
     
-    # Проверяем, не существует ли уже запрос
+    # Проверяем, не являются ли уже друзьями (в любом направлении)
+    existing_friendship = Friendship.objects.filter(
+        status='accepted'
+    ).filter(
+        (Q(from_user=request.user) & Q(to_user=to_user)) |
+        (Q(from_user=to_user) & Q(to_user=request.user))
+    ).first()
+    
+    if existing_friendship:
+        return Response({'error': 'Already friends'}, status=400)
+    
+    # Проверяем, не отправлен ли уже запрос в любом направлении
+    existing_pending = Friendship.objects.filter(
+        status='pending'
+    ).filter(
+        (Q(from_user=request.user) & Q(to_user=to_user)) |
+        (Q(from_user=to_user) & Q(to_user=request.user))
+    ).first()
+    
+    if existing_pending:
+        # Если обратный запрос уже существует (они отправили нам), автоматически принимаем
+        if existing_pending.from_user == to_user:
+            existing_pending.status = 'accepted'
+            existing_pending.save()
+            serializer = FriendshipSerializer(existing_pending)
+            return Response(serializer.data, status=200)
+        else:
+            # Мы уже отправили запрос
+            return Response({'error': 'Friend request already sent'}, status=400)
+    
+    # Создаем новый запрос
     friendship, created = Friendship.objects.get_or_create(
         from_user=request.user,
         to_user=to_user,
@@ -493,11 +530,7 @@ def send_friend_request(request):
     )
     
     if not created:
-        if friendship.status == 'accepted':
-            return Response({'error': 'Already friends'}, status=400)
-        elif friendship.status == 'pending':
-            return Response({'error': 'Friend request already sent'}, status=400)
-        else:
+        if friendship.status == 'rejected':
             # Если был отклонен, обновляем статус
             friendship.status = 'pending'
             friendship.save()
