@@ -146,3 +146,23 @@ class SharedList(models.Model):
     def __str__(self):
         return f"{self.from_user.username} -> {self.to_user.username} ({self.category.display_name})"
 
+
+class SharedListConnection(models.Model):
+    """Связь пользователей с общим списком (категорией)"""
+    owner_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_shared_lists', verbose_name='Владелец списка')
+    shared_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shared_list_connections', verbose_name='Участник')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='shared_connections', verbose_name='Категория')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+    
+    class Meta:
+        verbose_name = 'Подключение к общему списку'
+        verbose_name_plural = 'Подключения к общим спискам'
+        unique_together = [['owner_user', 'shared_user', 'category']]
+        indexes = [
+            models.Index(fields=['owner_user', 'category']),
+            models.Index(fields=['shared_user', 'category']),
+        ]
+    
+    def __str__(self):
+        return f"{self.owner_user.username} <-> {self.shared_user.username} ({self.category.display_name})"
+

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, ShoppingItem, UserProfile, Friendship, SharedList
+from .models import Category, ShoppingItem, UserProfile, Friendship, SharedList, SharedListConnection
 
 
 @admin.register(Category)
@@ -71,4 +71,12 @@ class SharedListAdmin(admin.ModelAdmin):
     list_filter = ['status', 'category', 'created_at']
     search_fields = ['from_user__username', 'to_user__username', 'category__name']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(SharedListConnection)
+class SharedListConnectionAdmin(admin.ModelAdmin):
+    list_display = ['owner_user', 'shared_user', 'category', 'created_at']
+    list_filter = ['category', 'created_at']
+    search_fields = ['owner_user__username', 'shared_user__username', 'category__name']
+    readonly_fields = ['created_at']
 

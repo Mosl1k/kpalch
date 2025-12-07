@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Max, Q
-from .models import ShoppingItem, Category, Friendship, SharedList
+from .models import ShoppingItem, Category, Friendship, SharedList, SharedListConnection
 from .serializers import ShoppingItemSerializer, CategorySerializer, UserSerializer, FriendshipSerializer, SharedListSerializer
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
@@ -114,7 +114,8 @@ def index(request):
             category_name = current_category.name
     
     # Получаем элементы для текущей категории
-    # Если пользователь - админ, показываем все элементы, иначе только свои
+    # Если пользователь - админ, показываем все элементы
+    # Иначе показываем свои или общие элементы
     items = []
     if current_category:
         if request.user.is_superuser:
@@ -123,11 +124,8 @@ def index(request):
                 category=current_category
             ).order_by('order', '-priority', 'name')
         else:
-            # Обычный пользователь видит только свои элементы
-            items = ShoppingItem.objects.filter(
-                user=request.user,
-                category=current_category
-            ).order_by('order', '-priority', 'name')
+            # Обычный пользователь видит свои элементы или общие
+            items = get_items_for_category(request.user, current_category).order_by('order', '-priority', 'name')
     
     # Передаем информацию о том, какие категории можно удалять
     # Крестик удаления показывается только для нестандартных категорий, созданных пользователем
@@ -149,10 +147,47 @@ def index(request):
     })
 
 
+def get_shared_category_owner(user, category):
+    """Получить владельца общей категории для пользователя"""
+    connection = SharedListConnection.objects.filter(
+        shared_user=user,
+        category=category
+    ).first()
+    if connection:
+        return connection.owner_user
+    return None
+
+
+def is_category_shared_for_user(user, category):
+    """Проверяет, является ли категория общей для пользователя"""
+    return SharedListConnection.objects.filter(
+        shared_user=user,
+        category=category
+    ).exists()
+
+
+def get_items_for_category(user, category):
+    """Получить элементы категории для пользователя (свои или общие)"""
+    # Проверяем, является ли категория общей
+    owner = get_shared_category_owner(user, category)
+    if owner:
+        # Если категория общая, показываем элементы владельца
+        return ShoppingItem.objects.filter(
+            user=owner,
+            category=category
+        )
+    else:
+        # Иначе показываем свои элементы
+        return ShoppingItem.objects.filter(
+            user=user,
+            category=category
+        )
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_items(request):
-    """Получить список элементов по категории"""
+    """Получить список элементов по категории (свои или общие)"""
     category_name = request.GET.get('category')
     if not category_name:
         return Response({'error': 'Category is required'}, status=400)
@@ -162,10 +197,8 @@ def list_items(request):
     except Category.DoesNotExist:
         return Response({'error': 'Category not found'}, status=404)
     
-    items = ShoppingItem.objects.filter(
-        user=request.user,
-        category=category
-    ).order_by('order', '-priority', 'name')
+    # Получаем элементы (свои или общие)
+    items = get_items_for_category(request.user, category).order_by('order', '-priority', 'name')
     
     serializer = ShoppingItemSerializer(items, many=True)
     return Response(serializer.data)
@@ -229,7 +262,7 @@ def delete_category(request, category_name):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_item(request):
-    """Добавить элемент в список"""
+    """Добавить элемент в список (свой или общий)"""
     data = request.data
     category_name = data.get('category')
     name = data.get('name', '').strip()
@@ -243,18 +276,22 @@ def add_item(request):
     except Category.DoesNotExist:
         return Response({'error': 'Category not found'}, status=404)
     
+    # Определяем, кому добавлять элемент (себе или владельцу общего списка)
+    owner = get_shared_category_owner(request.user, category)
+    target_user = owner if owner else request.user
+    
     # Проверяем, не существует ли уже такой элемент
-    if ShoppingItem.objects.filter(user=request.user, name=name, category=category).exists():
+    if ShoppingItem.objects.filter(user=target_user, name=name, category=category).exists():
         return Response({'error': 'Item already exists'}, status=400)
     
     # Определяем порядок (максимальный + 1)
     max_order = ShoppingItem.objects.filter(
-        user=request.user,
+        user=target_user,
         category=category
     ).aggregate(Max('order'))['order__max'] or 0
     
     item = ShoppingItem.objects.create(
-        user=request.user,
+        user=target_user,
         name=name,
         category=category,
         priority=priority,
@@ -268,20 +305,27 @@ def add_item(request):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def buy_item(request, name):
-    """Отметить элемент как купленный/некупленный"""
+    """Отметить элемент как купленный/некупленный (в своем или общем списке)"""
     category_name = request.GET.get('category')
     if not category_name:
         return Response({'error': 'Category is required'}, status=400)
     
     try:
         category = Category.objects.get(name=category_name)
-        # Если админ, ищем элемент без фильтра по user
-        if request.user.is_superuser:
-            item = ShoppingItem.objects.get(name=name, category=category)
-        else:
-            item = ShoppingItem.objects.get(user=request.user, name=name, category=category)
-    except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
-        return Response({'error': 'Item not found'}, status=404)
+    except Category.DoesNotExist:
+        return Response({'error': 'Category not found'}, status=404)
+    
+    # Определяем, где искать элемент (в своем списке или общем)
+    items_query = get_items_for_category(request.user, category)
+    
+    # Если админ, ищем элемент без фильтра
+    if request.user.is_superuser:
+        item = ShoppingItem.objects.get(name=name, category=category)
+    else:
+        try:
+            item = items_query.get(name=name)
+        except ShoppingItem.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
     
     data = request.data
     item.bought = data.get('bought', not item.bought)
@@ -294,20 +338,27 @@ def buy_item(request, name):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_item(request, name):
-    """Удалить элемент"""
+    """Удалить элемент (из своего или общего списка)"""
     category_name = request.GET.get('category')
     if not category_name:
         return Response({'error': 'Category is required'}, status=400)
     
     try:
         category = Category.objects.get(name=category_name)
-        # Если админ, ищем элемент без фильтра по user
-        if request.user.is_superuser:
-            item = ShoppingItem.objects.get(name=name, category=category)
-        else:
-            item = ShoppingItem.objects.get(user=request.user, name=name, category=category)
-    except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
-        return Response({'error': 'Item not found'}, status=404)
+    except Category.DoesNotExist:
+        return Response({'error': 'Category not found'}, status=404)
+    
+    # Определяем, где искать элемент (в своем списке или общем)
+    items_query = get_items_for_category(request.user, category)
+    
+    # Если админ, ищем элемент без фильтра
+    if request.user.is_superuser:
+        item = ShoppingItem.objects.get(name=name, category=category)
+    else:
+        try:
+            item = items_query.get(name=name)
+        except ShoppingItem.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
     
     item.delete()
     return Response({'message': 'Item deleted'}, status=200)
@@ -316,18 +367,28 @@ def delete_item(request, name):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def edit_item(request, name):
-    """Редактировать элемент"""
+    """Редактировать элемент (в своем или общем списке)"""
     category_name = request.GET.get('oldCategory') or request.GET.get('category')
     if not category_name:
         return Response({'error': 'Category is required'}, status=400)
     
     try:
         category = Category.objects.get(name=category_name)
-        item = ShoppingItem.objects.get(user=request.user, name=name, category=category)
-    except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
+    except Category.DoesNotExist:
+        return Response({'error': 'Category not found'}, status=404)
+    
+    # Определяем, где искать элемент (в своем списке или общем)
+    items_query = get_items_for_category(request.user, category)
+    
+    try:
+        item = items_query.get(name=name)
+    except ShoppingItem.DoesNotExist:
         return Response({'error': 'Item not found'}, status=404)
     
     data = request.data
+    
+    # Определяем владельца для новой категории, если она меняется
+    target_user = item.user  # Оставляем текущего владельца элемента
     
     # Обновляем название, если указано
     if 'name' in data:
@@ -337,7 +398,16 @@ def edit_item(request, name):
     if 'category' in data:
         try:
             new_category = Category.objects.get(name=data['category'])
+            # Определяем владельца для новой категории
+            new_owner = get_shared_category_owner(request.user, new_category)
+            if new_owner:
+                target_user = new_owner
+            elif not is_category_shared_for_user(request.user, new_category):
+                target_user = request.user
+            # Меняем категорию
             item.category = new_category
+            # Если категория изменилась, может потребоваться сменить владельца
+            # Но проще оставить текущего владельца
         except Category.DoesNotExist:
             return Response({'error': 'New category not found'}, status=404)
     
@@ -354,21 +424,24 @@ def edit_item(request, name):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reorder_items(request):
-    """Изменить порядок элементов"""
-    items = request.data
-    if not isinstance(items, list):
+    """Изменить порядок элементов (в своем или общем списке)"""
+    items_data = request.data
+    if not isinstance(items_data, list):
         return Response({'error': 'Items must be a list'}, status=400)
     
-    for index, item_data in enumerate(items):
+    for index, item_data in enumerate(items_data):
         try:
-            item = ShoppingItem.objects.get(
-                user=request.user,
-                name=item_data.get('name'),
-                category__name=item_data.get('category')
-            )
+            category_name = item_data.get('category')
+            if not category_name:
+                continue
+                
+            category = Category.objects.get(name=category_name)
+            # Ищем элемент в своем или общем списке
+            items_query = get_items_for_category(request.user, category)
+            item = items_query.get(name=item_data.get('name'))
             item.order = index
             item.save()
-        except ShoppingItem.DoesNotExist:
+        except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
             continue
     
     return Response({'message': 'Order updated'}, status=200)
@@ -688,30 +761,18 @@ def list_shared_lists(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def accept_shared_list(request, shared_list_id):
-    """Принять шаринг списка"""
+    """Принять шаринг списка - создаем связь для общего доступа"""
     try:
         shared_list = SharedList.objects.get(id=shared_list_id, to_user=request.user, status='pending')
     except SharedList.DoesNotExist:
         return Response({'error': 'Shared list not found'}, status=404)
     
-    # Копируем элементы из списка отправителя в список получателя
-    source_items = ShoppingItem.objects.filter(user=shared_list.from_user, category=shared_list.category)
-    
-    for source_item in source_items:
-        # Проверяем, не существует ли уже такой элемент
-        if not ShoppingItem.objects.filter(
-            user=request.user,
-            name=source_item.name,
-            category=source_item.category
-        ).exists():
-            ShoppingItem.objects.create(
-                user=request.user,
-                name=source_item.name,
-                category=source_item.category,
-                priority=source_item.priority,
-                bought=False,  # Новые элементы не куплены
-                order=source_item.order
-            )
+    # Создаем связь для общего доступа (не копируем элементы!)
+    SharedListConnection.objects.get_or_create(
+        owner_user=shared_list.from_user,
+        shared_user=request.user,
+        category=shared_list.category
+    )
     
     shared_list.status = 'accepted'
     shared_list.save()

@@ -7,7 +7,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.contrib.auth.models import User
-from .models import ShoppingItem, Category
+from .models import ShoppingItem, Category, SharedListConnection
 import json
 
 
@@ -37,7 +37,7 @@ def get_service_users(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def internal_list(request):
-    """Получить список элементов (объединенный для всех сервисных пользователей)"""
+    """Получить список элементов (объединенный для всех сервисных пользователей, учитывая общие списки)"""
     category_name = request.GET.get('category')
     if not category_name:
         return JsonResponse({'error': 'Category is required'}, status=400)
@@ -48,16 +48,29 @@ def internal_list(request):
         return JsonResponse({'error': 'Category not found'}, status=404)
     
     users = get_service_users(request)
+    
+    # Собираем пользователей, элементы которых нужно показать
+    # Если у пользователя категория общая, берем владельца
+    owner_users = set()
+    for user in users:
+        connection = SharedListConnection.objects.filter(
+            shared_user=user,
+            category=category
+        ).first()
+        if connection:
+            owner_users.add(connection.owner_user)
+        else:
+            owner_users.add(user)
+    
     items = ShoppingItem.objects.filter(
-        user__in=users,
+        user__in=owner_users,
         category=category
-    ).order_by('user__username', 'order', '-priority', 'name')
+    ).order_by('order', '-priority', 'name')
     
     # Формируем ответ в формате старого API
     result = []
     
     for item in items:
-        # Убираем префикс с логином - показываем только имя элемента
         result.append({
             'name': item.name,
             'category': category.name,
@@ -96,19 +109,26 @@ def internal_add(request):
     
     user = users.first()
     
+    # Проверяем, является ли категория общей для этого пользователя
+    connection = SharedListConnection.objects.filter(
+        shared_user=user,
+        category=category
+    ).first()
+    target_user = connection.owner_user if connection else user
+    
     # Проверяем, не существует ли уже такой элемент
-    if ShoppingItem.objects.filter(user=user, name=name, category=category).exists():
+    if ShoppingItem.objects.filter(user=target_user, name=name, category=category).exists():
         return JsonResponse({'error': 'Item already exists'}, status=400)
     
     # Определяем порядок
     from django.db.models import Max
     max_order = ShoppingItem.objects.filter(
-        user=user,
+        user=target_user,
         category=category
     ).aggregate(Max('order'))['order__max'] or 0
     
     item = ShoppingItem.objects.create(
-        user=user,
+        user=target_user,
         name=name,
         category=category,
         priority=priority,
@@ -134,7 +154,20 @@ def internal_buy(request, name):
     try:
         category = Category.objects.get(name=category_name)
         users = get_service_users(request)
-        item = ShoppingItem.objects.get(user__in=users, name=name, category=category)
+        
+        # Для каждого пользователя проверяем общие списки
+        owner_users = set()
+        for user in users:
+            connection = SharedListConnection.objects.filter(
+                shared_user=user,
+                category=category
+            ).first()
+            if connection:
+                owner_users.add(connection.owner_user)
+            else:
+                owner_users.add(user)
+        
+        item = ShoppingItem.objects.get(user__in=owner_users, name=name, category=category)
     except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
         return JsonResponse({'error': 'Item not found'}, status=404)
     
@@ -165,7 +198,20 @@ def internal_delete(request, name):
     try:
         category = Category.objects.get(name=category_name)
         users = get_service_users(request)
-        item = ShoppingItem.objects.get(user__in=users, name=name, category=category)
+        
+        # Для каждого пользователя проверяем общие списки
+        owner_users = set()
+        for user in users:
+            connection = SharedListConnection.objects.filter(
+                shared_user=user,
+                category=category
+            ).first()
+            if connection:
+                owner_users.add(connection.owner_user)
+            else:
+                owner_users.add(user)
+        
+        item = ShoppingItem.objects.get(user__in=owner_users, name=name, category=category)
     except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
         return JsonResponse({'error': 'Item not found'}, status=404)
     
@@ -189,7 +235,20 @@ def internal_edit(request, name):
     try:
         category = Category.objects.get(name=category_name)
         users = get_service_users(request)
-        item = ShoppingItem.objects.get(user__in=users, name=name, category=category)
+        
+        # Для каждого пользователя проверяем общие списки
+        owner_users = set()
+        for user in users:
+            connection = SharedListConnection.objects.filter(
+                shared_user=user,
+                category=category
+            ).first()
+            if connection:
+                owner_users.add(connection.owner_user)
+            else:
+                owner_users.add(user)
+        
+        item = ShoppingItem.objects.get(user__in=owner_users, name=name, category=category)
     except (Category.DoesNotExist, ShoppingItem.DoesNotExist):
         return JsonResponse({'error': 'Item not found'}, status=404)
     
