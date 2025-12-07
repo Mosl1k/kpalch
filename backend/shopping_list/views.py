@@ -388,7 +388,7 @@ def edit_item(request, name):
     data = request.data
     
     # Определяем владельца для новой категории, если она меняется
-    target_user = item.user  # Оставляем текущего владельца элемента
+    target_user = item.user  # Начинаем с текущего владельца элемента
     
     # Обновляем название, если указано
     if 'name' in data:
@@ -401,20 +401,29 @@ def edit_item(request, name):
             # Определяем владельца для новой категории
             new_owner = get_shared_category_owner(request.user, new_category)
             if new_owner:
+                # Если новая категория общая, владелец должен быть владельцем категории
                 target_user = new_owner
             elif not is_category_shared_for_user(request.user, new_category):
+                # Если категория не общая и принадлежит текущему пользователю, владелец - текущий пользователь
                 target_user = request.user
             # Меняем категорию
             item.category = new_category
-            # Если категория изменилась, может потребоваться сменить владельца
-            # Но проще оставить текущего владельца
         except Category.DoesNotExist:
             return Response({'error': 'New category not found'}, status=404)
+    
+    # Если категория не менялась, но элемент находится в общей категории,
+    # убеждаемся, что владелец правильный
+    if 'category' not in data:
+        current_owner = get_shared_category_owner(request.user, category)
+        if current_owner:
+            target_user = current_owner
     
     # Обновляем приоритет, если указан
     if 'priority' in data:
         item.priority = int(data['priority'])
     
+    # Присваиваем правильного владельца элементу перед сохранением
+    item.user = target_user
     item.save()
     
     serializer = ShoppingItemSerializer(item)
