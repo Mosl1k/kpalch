@@ -183,8 +183,7 @@ async def add_to_category(update: Update, context):
 
     try:
         headers = {"Content-Type": "application/json"}
-        if SERVICE_USER_ID:
-            headers["X-User-ID"] = SERVICE_USER_ID
+        headers.update(get_service_headers())
 
         data = {
             "name": item_name,
