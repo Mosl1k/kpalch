@@ -70,3 +70,4 @@ print('SOCIAL_AUTH_YANDEX_OAUTH2_REDIRECT_URI:', getattr(settings, 'SOCIAL_AUTH_
 
 
 
+

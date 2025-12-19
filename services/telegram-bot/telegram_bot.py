@@ -628,7 +628,12 @@ async def show_list(update: Update, context, list_type):
         if SERVICE_USER_ID:
             headers["X-User-ID"] = SERVICE_USER_ID
 
-        response = requests.get(f"{API_URL}/list?category={list_type}", headers=headers)
+        url = f"{API_URL}/list?category={list_type}"
+        logging.info(f"Telegram bot requesting: {url} with headers: {headers}")
+        
+        response = requests.get(url, headers=headers)
+        logging.info(f"Telegram bot response: status={response.status_code}, text_length={len(response.text)}")
+        
         if response.status_code != 200:
             error_msg = f"Ошибка API: {response.status_code} - {response.text}"
             logging.error(error_msg)
@@ -646,12 +651,14 @@ async def show_list(update: Update, context, list_type):
 
         try:
             items = response.json()
+            logging.info(f"Telegram bot parsed items: count={len(items) if items else 0}")
         except json.JSONDecodeError as e:
             error_msg = f"Ошибка парсинга JSON: {e}. Ответ: {response.text[:200]}"
             logging.error(error_msg)
             if update.callback_query:
                 await update.callback_query.message.reply_text(f"Ошибка подключения к API: {e}")
             return
+        
         if not items:
             response_text = f"{LISTS[list_type]} пуст."
             reply_markup = get_list_keyboard(list_type)

@@ -49,6 +49,14 @@ def internal_list(request):
     
     users = get_service_users(request)
     
+    # Если пользователи не найдены, возвращаем пустой список
+    if not users.exists():
+        import logging
+        logger = logging.getLogger(__name__)
+        user_ids = get_service_user_ids(request)
+        logger.warning(f"No service users found for IDs: {user_ids}")
+        return JsonResponse([], safe=False)
+    
     # Собираем пользователей, элементы которых нужно показать
     # Если у пользователя категория общая, берем владельца
     owner_users = set()
@@ -62,10 +70,22 @@ def internal_list(request):
         else:
             owner_users.add(user)
     
+    # Если не нашли владельцев, возвращаем пустой список
+    if not owner_users:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"No owner users found for category: {category_name}, service users: {list(users.values_list('username', flat=True))}")
+        return JsonResponse([], safe=False)
+    
     items = ShoppingItem.objects.filter(
         user__in=owner_users,
         category=category
     ).order_by('order', '-priority', 'name')
+    
+    # Логирование для отладки
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"internal_list: category={category_name}, owner_users={[u.username for u in owner_users]}, items_count={items.count()}")
     
     # Формируем ответ в формате старого API
     result = []
