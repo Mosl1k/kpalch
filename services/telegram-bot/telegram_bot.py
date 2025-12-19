@@ -673,12 +673,13 @@ async def show_list(update: Update, context, list_type):
                 logger.info(f"[TELEGRAM BOT] Первые элементы: {[item.get('name', '') for item in items[:5]]}")
         except json.JSONDecodeError as e:
             error_msg = f"Ошибка парсинга JSON: {e}. Ответ: {response.text[:200]}"
-            logging.error(error_msg)
+            logger.error(f"[TELEGRAM BOT] {error_msg}")
             if update.callback_query:
                 await update.callback_query.message.reply_text(f"Ошибка подключения к API: {e}")
             return
         
         if not items:
+            logger.warning(f"[TELEGRAM BOT] Список пуст для категории {list_type}")
             response_text = f"{LISTS[list_type]} пуст."
             reply_markup = get_list_keyboard(list_type)
             if update.callback_query:
@@ -714,24 +715,30 @@ async def show_list(update: Update, context, list_type):
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         # Редактируем сообщение вместо создания нового
+        logger.info(f"[TELEGRAM BOT] Отправка сообщения со списком: {len(keyboard)} кнопок")
         if update.callback_query:
             try:
                 await update.callback_query.message.edit_text(response_text, reply_markup=reply_markup)
+                logger.info(f"[TELEGRAM BOT] Сообщение успешно обновлено для категории {list_type}")
             except Exception as e:
+                logger.error(f"[TELEGRAM BOT] Ошибка редактирования сообщения: {e}, отправка нового")
                 # Если не удалось отредактировать (например, текст не изменился), отправляем новое сообщение
                 await update.callback_query.message.reply_text(response_text, reply_markup=reply_markup)
     except requests.RequestException as e:
         error_msg = f"Ошибка подключения к API: {e}"
-        logging.error(error_msg)
-        await update.callback_query.message.reply_text(error_msg)
+        logger.error(f"[TELEGRAM BOT] {error_msg}")
+        if update.callback_query:
+            await update.callback_query.message.reply_text(error_msg)
     except json.JSONDecodeError:
         error_msg = "Ошибка: неверный формат данных от API."
-        logging.error(error_msg)
-        await update.callback_query.message.reply_text(error_msg)
+        logger.error(f"[TELEGRAM BOT] {error_msg}")
+        if update.callback_query:
+            await update.callback_query.message.reply_text(error_msg)
     except Exception as e:
         error_msg = f"Произошла ошибка: {str(e)}"
-        logging.error(error_msg)
-        await update.callback_query.message.reply_text(error_msg)
+        logger.error(f"[TELEGRAM BOT] {error_msg}", exc_info=True)
+        if update.callback_query:
+            await update.callback_query.message.reply_text(error_msg)
 
 def main():
     """Запуск бота."""
