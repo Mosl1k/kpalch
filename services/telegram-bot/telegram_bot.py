@@ -29,6 +29,7 @@ if not os.getenv("KUBERNETES_SERVICE_HOST"):
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_URL = os.getenv("API_URL", "http://geshtalt:8080/internal/api")
 SERVICE_USER_ID = os.getenv("SERVICE_USER_ID", "")
+SERVICE_USER_IDS = os.getenv("SERVICE_USER_IDS", "")
 
 # Категории для списков
 LISTS = {
@@ -86,6 +87,18 @@ def decode_item_name(encoded_name):
     except Exception as e:
         logging.error(f"Ошибка декодирования имени элемента: {e}")
         return ""
+
+def get_service_headers():
+    """Возвращает заголовки для API запросов с правильным X-User-ID"""
+    headers = {}
+    # Если SERVICE_USER_IDS установлен, берем первого пользователя (для обратной совместимости с одним пользователем API ожидает один заголовок)
+    if SERVICE_USER_IDS:
+        first_user = SERVICE_USER_IDS.split(',')[0].strip()
+        if first_user:
+            headers["X-User-ID"] = first_user
+    elif SERVICE_USER_ID:
+        headers["X-User-ID"] = SERVICE_USER_ID
+    return headers
 
 def get_item_actions_keyboard(item_name, category):
     """Возвращает клавиатуру для действий с элементом."""
@@ -517,9 +530,7 @@ async def suggest_dishes(update: Update, context):
     await query.answer()
 
     try:
-        headers = {}
-        if SERVICE_USER_ID:
-            headers["X-User-ID"] = SERVICE_USER_ID
+        headers = get_service_headers()
 
         response = requests.get(f"{API_URL}/list?category=холодос", headers=headers)
         if response.status_code != 200:
@@ -624,9 +635,7 @@ async def show_list(update: Update, context, list_type):
         return
 
     try:
-        headers = {}
-        if SERVICE_USER_ID:
-            headers["X-User-ID"] = SERVICE_USER_ID
+        headers = get_service_headers()
 
         url = f"{API_URL}/list?category={list_type}"
         logging.info(f"Telegram bot requesting: {url} with headers: {headers}")
