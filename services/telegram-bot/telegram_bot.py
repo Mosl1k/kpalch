@@ -19,6 +19,10 @@ logging.basicConfig(
     ]
 )
 
+# Уменьшаем уровень логирования для httpx и urllib3 (HTTP клиенты)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 # Загружаем переменные из .env (только для локальной разработки)
 # В Kubernetes/Docker переменные передаются через Secrets/ConfigMaps
 if not os.getenv("KUBERNETES_SERVICE_HOST"):
@@ -91,13 +95,18 @@ def decode_item_name(encoded_name):
 def get_service_headers():
     """Возвращает заголовки для API запросов с правильным X-User-ID"""
     headers = {}
+    logger = logging.getLogger(__name__)
     # Если SERVICE_USER_IDS установлен, берем первого пользователя (для обратной совместимости с одним пользователем API ожидает один заголовок)
     if SERVICE_USER_IDS:
         first_user = SERVICE_USER_IDS.split(',')[0].strip()
         if first_user:
             headers["X-User-ID"] = first_user
+            logger.debug(f"Using SERVICE_USER_IDS: {first_user} from {SERVICE_USER_IDS}")
     elif SERVICE_USER_ID:
         headers["X-User-ID"] = SERVICE_USER_ID
+        logger.debug(f"Using SERVICE_USER_ID: {SERVICE_USER_ID}")
+    else:
+        logger.warning("SERVICE_USER_ID and SERVICE_USER_IDS are not set! API requests may fail.")
     return headers
 
 def get_item_actions_keyboard(item_name, category):
@@ -476,8 +485,7 @@ async def change_priority_to(update: Update, context):
 
     try:
         headers = {"Content-Type": "application/json"}
-        if SERVICE_USER_ID:
-            headers["X-User-ID"] = SERVICE_USER_ID
+        headers.update(get_service_headers())
 
         response = requests.get(f"{API_URL}/list?category={category}", headers=headers)
         if response.status_code != 200:
@@ -637,14 +645,15 @@ async def show_list(update: Update, context, list_type):
         headers = get_service_headers()
 
         url = f"{API_URL}/list?category={list_type}"
-        logging.info(f"Telegram bot requesting: {url} with headers: {headers}")
+        logger = logging.getLogger(__name__)
+        logger.info(f"[TELEGRAM BOT] Запрос списка: category={list_type}, headers={headers}, url={url}")
         
         response = requests.get(url, headers=headers)
-        logging.info(f"Telegram bot response: status={response.status_code}, text_length={len(response.text)}")
+        logger.info(f"[TELEGRAM BOT] Ответ API: status={response.status_code}, text_length={len(response.text)}, text_preview={response.text[:200]}")
         
         if response.status_code != 200:
             error_msg = f"Ошибка API: {response.status_code} - {response.text}"
-            logging.error(error_msg)
+            logger.error(f"[TELEGRAM BOT] {error_msg}")
             if update.callback_query:
                 await update.callback_query.message.reply_text(error_msg)
             return
@@ -652,14 +661,16 @@ async def show_list(update: Update, context, list_type):
         # Проверяем, что ответ не пустой и является JSON
         if not response.text or response.text.strip() == "":
             error_msg = "Пустой ответ от API"
-            logging.error(error_msg)
+            logger.error(f"[TELEGRAM BOT] {error_msg}")
             if update.callback_query:
                 await update.callback_query.message.reply_text(error_msg)
             return
 
         try:
             items = response.json()
-            logging.info(f"Telegram bot parsed items: count={len(items) if items else 0}")
+            logger.info(f"[TELEGRAM BOT] Распарсено элементов: {len(items) if items else 0}")
+            if items:
+                logger.info(f"[TELEGRAM BOT] Первые элементы: {[item.get('name', '') for item in items[:5]]}")
         except json.JSONDecodeError as e:
             error_msg = f"Ошибка парсинга JSON: {e}. Ответ: {response.text[:200]}"
             logging.error(error_msg)
