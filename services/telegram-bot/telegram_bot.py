@@ -95,18 +95,13 @@ def decode_item_name(encoded_name):
 def get_service_headers():
     """Возвращает заголовки для API запросов с правильным X-User-ID"""
     headers = {}
-    logger = logging.getLogger(__name__)
     # Если SERVICE_USER_IDS установлен, берем первого пользователя (для обратной совместимости с одним пользователем API ожидает один заголовок)
     if SERVICE_USER_IDS:
         first_user = SERVICE_USER_IDS.split(',')[0].strip()
         if first_user:
             headers["X-User-ID"] = first_user
-            logger.debug(f"Using SERVICE_USER_IDS: {first_user} from {SERVICE_USER_IDS}")
     elif SERVICE_USER_ID:
         headers["X-User-ID"] = SERVICE_USER_ID
-        logger.debug(f"Using SERVICE_USER_ID: {SERVICE_USER_ID}")
-    else:
-        logger.warning("SERVICE_USER_ID and SERVICE_USER_IDS are not set! API requests may fail.")
     return headers
 
 def get_item_actions_keyboard(item_name, category):
@@ -742,20 +737,17 @@ async def show_list(update: Update, context, list_type):
 
 def main():
     """Запуск бота."""
-    logging.info("Запуск Telegram бота...")
-    logging.info(f"API_URL: {API_URL}")
-    logging.info(f"SERVICE_USER_ID: {SERVICE_USER_ID if SERVICE_USER_ID else 'не указан'}")
+    logger = logging.getLogger(__name__)
+    logger.info("[TELEGRAM BOT] Запуск Telegram бота...")
+    logger.info(f"[TELEGRAM BOT] API_URL: {API_URL}")
     
     if not TELEGRAM_TOKEN:
-        logging.error("Ошибка: TELEGRAM_TOKEN не указан в переменных окружения")
+        logger.error("[TELEGRAM BOT] Ошибка: TELEGRAM_TOKEN не указан в переменных окружения")
         return
     
     if not API_URL:
-        logging.error("Ошибка: API_URL не указан в переменных окружения")
+        logger.error("[TELEGRAM BOT] Ошибка: API_URL не указан в переменных окружения")
         return
-    
-    if not SERVICE_USER_ID:
-        logging.warning("Предупреждение: SERVICE_USER_ID не указан, будет использован дефолтный пользователь")
 
     try:
         application = Application.builder().token(TELEGRAM_TOKEN).build()
@@ -764,10 +756,10 @@ def main():
         application.add_handler(CallbackQueryHandler(button_callback))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_text))
 
-        logging.info("Бот запущен и готов к работе...")
+        logger.info("[TELEGRAM BOT] Бот запущен и готов к работе...")
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     except Exception as e:
-        logging.error(f"Критическая ошибка при запуске бота: {e}", exc_info=True)
+        logger.error(f"[TELEGRAM BOT] Критическая ошибка при запуске бота: {e}", exc_info=True)
         raise
 
 if __name__ == "__main__":
