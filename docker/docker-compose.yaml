@@ -74,6 +74,19 @@ services:
       - default
     restart: always
 
+  max-bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.max-bot
+    container_name: max-bot
+    depends_on:
+      - geshtalt
+    env_file: ../.env
+    # MAX_BOT_TOKEN загружается из env_file
+    networks:
+      - default
+    restart: always
+
   nginx:
     build:
       context: ..
@@ -86,10 +99,10 @@ services:
       - ../infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot
-      - html_www:/var/www/html
     depends_on:
       - geshtalt
       - alice
+      - max-bot
     restart: always
     networks:
       - default
@@ -97,7 +110,6 @@ services:
 volumes:
   postgres_data:
   certbot_www:
-  html_www:
 
 networks:
   default:

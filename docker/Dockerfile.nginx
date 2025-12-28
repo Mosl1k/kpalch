@@ -6,8 +6,11 @@ RUN apk add --no-cache certbot certbot-nginx bind-tools curl
 # Копируем конфигурацию nginx
 COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
 
-# Создаём директорию для certbot
-RUN mkdir -p /etc/letsencrypt
+# Создаём директорию для certbot и html файлов
+RUN mkdir -p /etc/letsencrypt /var/www/html
+
+# Копируем файлы верификации (Yandex и другие)
+COPY infra/html/ /var/www/html/
 
 # Скрипт для получения сертификата при первом запуске
 RUN echo '#!/bin/sh' > /usr/local/bin/init-cert.sh && \
